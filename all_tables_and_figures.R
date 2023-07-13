@@ -103,7 +103,8 @@ race_aware_calibration_plot_data <- data %>%
 # This chunk determines the vertical order of the lines in the plot
 # so that we can have the order of the lines in the legend reflect
 # the order of the lines in the plot so that it is easier to read
-risk_score_upper_bound <- 0.05
+risk_score_upper_bound <- 0.1
+incidence_upper_bound <- 0.24
 line_order <- race_blind_calibration_plot_data %>%
   # Make sure x-range lines up with what is visualized in plot
   filter(risk_score_bin < risk_score_upper_bound) %>%
@@ -128,9 +129,10 @@ race_blind_calibration_plot_data %>%
   xlab("Race-unaware predicted risk") +
   ylab("Observed diabetes rate") +
   scale_y_continuous(labels = scales::percent,
-                     breaks = seq(0.0, 0.12, 0.02)) +
-  scale_x_continuous(labels = scales::percent) +
-  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, 0.12)) +
+                     breaks = seq(0.0, incidence_upper_bound, 0.04)) +
+  scale_x_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.02)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
   theme(legend.title = element_blank(),
         legend.position = c(0.15, 0.85)) +
   scale_color_manual(values=ordered_group_color_map,
@@ -149,9 +151,10 @@ race_aware_calibration_plot_data %>%
   xlab("Race-aware predicted risk") +
   ylab("Observed diabetes rate") +
   scale_y_continuous(labels = scales::percent,
-                     breaks = seq(0.0, 0.12, 0.02)) +
-  scale_x_continuous(labels = scales::percent) +
-  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, 0.12)) +
+                     breaks = seq(0.0, incidence_upper_bound, 0.04)) +
+  scale_x_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.02)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
   theme(legend.position = "none") +
   scale_color_manual(values=group_color_map,
                      breaks = c("White", "Hispanic", "Black", "Asian"))
@@ -250,21 +253,21 @@ white_area <-
          screening_utility <= 0)
   
 race_blind_utilities_plot_data %>%
-  ggplot(aes(x = race_blind_risk_score, y = screening_utility, color = race)) +
-  annotate("rect", xmin = optimal_thresh, xmax = 1, ymin = -10, ymax = 10,
+  ggplot(aes(x = race_blind_risk_score, y = screening_utility*100, color = race)) +
+  annotate("rect", xmin = optimal_thresh, xmax = 1, ymin = -20*100, ymax = 20*100,
            alpha = .075) + 
   geom_line() +
-  geom_ribbon(data = asian_area, aes(ymin=0,ymax=screening_utility), fill="darkgray", alpha=0.95, show.legend = FALSE) +
-  geom_ribbon(data = white_area, aes(ymin=screening_utility,ymax=0), fill="darkgray", alpha=0.95, show.legend = FALSE) +
+  geom_ribbon(data = asian_area, aes(ymin=0,ymax=screening_utility*100), fill="darkgray", alpha=0.95, show.legend = FALSE) +
+  geom_ribbon(data = white_area, aes(ymin=screening_utility*100,ymax=0), fill="darkgray", alpha=0.95, show.legend = FALSE) +
   geom_vline(xintercept=optimal_thresh) +
   geom_hline(yintercept=0) +
-  coord_cartesian(xlim = c(0, 0.051), ylim = c(-8,8)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(-500,1800)) +
   scale_color_manual(values=group_color_map,
                      breaks = c("Asian", "White")) +
   xlab("Race-unaware risk score") +
-  ylab("Utility")  +
+  ylab("Utility ($)")  +
   scale_x_continuous(labels = scales::percent,
-                     breaks = seq(0.0, 0.1, 0.01)) +
+                     breaks = seq(0.0, risk_score_upper_bound + 0.001, 0.02)) +
   theme(legend.title = element_blank(),
         legend.position = c(0.15, 0.89))
 
@@ -316,8 +319,8 @@ risk_scores %>%
   scale_y_continuous(labels = scales::percent,
                      breaks = seq(0.0, 0.1, 0.02)) +
   scale_x_continuous(labels = scales::percent,
-                     breaks = seq(0.0, 0.1, 0.01)) +
-  coord_cartesian(xlim = c(0, 0.051), ylim = c(0, 0.07)) +
+                     breaks = seq(0.0, 0.1, 0.02)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound + 0.001), ylim = c(0, 0.07)) +
   theme(legend.title = element_blank(),
         legend.position = c(0.78, 0.93),
         legend.background = element_blank()) +
@@ -459,9 +462,10 @@ extended_race_blind_calibration_plot_data %>%
   xlab("Extended race-unaware predicted risk") +
   ylab("Observed diabetes rate") +
   scale_y_continuous(labels = scales::percent,
-                     breaks = seq(0.0, 0.12, 0.02)) +
-  scale_x_continuous(labels = scales::percent) +
-  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, 0.12)) +
+                     breaks = seq(0.0, 0.24, 0.04)) +
+  scale_x_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.02)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, 0.24)) +
   theme(legend.title = element_blank(),
         legend.position = c(0.15, 0.85)) +
   scale_color_manual(values=ordered_group_color_map,
