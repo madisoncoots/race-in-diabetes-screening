@@ -134,7 +134,7 @@ race_blind_calibration_plot_data %>%
                      breaks = seq(0.0, risk_score_upper_bound, 0.02)) +
   coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
   theme(legend.title = element_blank(),
-        legend.position = c(0.15, 0.85)) +
+        legend.position = c(0.35, 0.84)) +
   scale_color_manual(values=ordered_group_color_map,
                      breaks = ordered_group_names)
 
@@ -467,7 +467,7 @@ extended_race_blind_calibration_plot_data %>%
                      breaks = seq(0.0, risk_score_upper_bound, 0.02)) +
   coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, 0.24)) +
   theme(legend.title = element_blank(),
-        legend.position = c(0.15, 0.85)) +
+        legend.position =  c(0.35, 0.84)) +
   scale_color_manual(values=ordered_group_color_map,
                      breaks = ordered_group_names)
 
