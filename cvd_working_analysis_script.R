@@ -32,7 +32,7 @@ race_blind_model <- glm(race_blind_formula,
 race_blind_model_pred <- predict(race_blind_model, newdata = synthetic_data, type = "response")
 
 race_aware_formula <- cvd ~ race * (gender + ridageyr + lbxtc + lbdldl + 
-  lbdhdd + sys_bp + diabetes + smokes)
+  lbdhdd + sys_bp + diabetes + smokes) +
 race_aware_model <- glm(race_aware_formula,
                           data = synthetic_data,
                           family = "binomial",
@@ -77,40 +77,28 @@ get_isotonically_smoothed_plot_data <- function(predictions, data, risk_lower_bo
   ) %>%
   drop_na()
   
+  # Train an isotonic model for each race group
   race_groups = unique(smoothing_data$race)
-  x <- smoothing_data$risk_score
-  y <- smoothing_data$cvd
-  # iso_reg <- isoreg(x, y)
-  
-  isofit <- as.stepfun(isoreg(x, y))
-  plot_data <- seq(risk_lower_bound, risk_upper_bound, by = 0.01)
-  plot(plot_data, isofit(plot_data))
-  lines(plot_data, isofit(plot_data))
-  # # Assume you have new data for which you want to make predictions
-  # plot_data <- data.frame(
-  #   risk_score = ,
-  #   race = rep(c("Black", "White", "Hispanic", "Asian"), each = ((risk_upper_bound - risk_lower_bound) * 100) + 1)
-  # )
-  # 
-  # # Create an interpolated function based on the fitted values
-  # iso_reg_fun <- approxfun(x = iso_reg$x, y = iso_reg$yf)
-  # 
-  # # Use the interpolated function to make predictions
-  # predictions <- iso_reg_fun(new_data)
-  # 
-  # # Print the predictions
-  # print(predictions)
-  
-  # plot(x, y, main = "Isotonic Regression", xlab = "X", ylab = "Y")
-  # lines(iso_reg)
-  # summary(iso_reg)
+  plot_data <- data.frame()
+  for (r in race_groups) {
+    subset <- smoothing_data %>% filter(race == r)
+    iso_fit <- as.stepfun(isoreg(subset$risk_score, subset$cvd))
+    # Create plotting data
+    subset_data <- data.frame(
+      risk_score = seq(risk_lower_bound, risk_upper_bound, by = 0.01),
+      race = rep(r, each = ((risk_upper_bound - risk_lower_bound) * 100) + 1)
+      ) %>%
+      mutate(smoothed_cvd = iso_fit(risk_score))
+    plot_data <- bind_rows(plot_data, subset_data)
+  }
+  return(plot_data)
 }
 
 
 
 risk_score_upper_bound <- 0.4
 incidence_upper_bound <- 0.45
-race_blind_calibration_plot_data <- get_isotonically_smoothed_plot_data(race_blind_model_pred, synthetic_data, 0, 0.6)
+race_blind_calibration_plot_data <- get_smoothed_plot_data(race_blind_model_pred, synthetic_data, 0, 0.6)
 
 race_blind_calibration_plot_data %>%
   ggplot(aes(x=risk_score, y=smoothed_cvd, color=race)) +
