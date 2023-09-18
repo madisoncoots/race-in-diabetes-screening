@@ -9,20 +9,28 @@
 # 4. Body measurements (BMX)
 # 5. Glycohemoglobin measurements (GHB)
 # 6. Health insurance status (HIQ)
-# 7. Physical activity data (PAQ)
-# 8. Medical conditions data (MCQ)
-# 9. Mental health data (DPQ)
-# 10. Smoking history (SMQ)
-# 11. Total cholesterol (TCHOL)
-# 12. High-density lipoprotein (HDL)
-# 13. Low-density lipoprotein (TRIGLY)
+# 7. Food insecurity data (FSQ)
+# 8. Physical activity data (PAQ)
+# 9. Medical conditions data (MCQ)
+# 10. Mental health data (DPQ)
+# 11. Smoking history (SMQ)
+# 12. Total cholesterol (TCHOL)
+# 13. High-density lipoprotein (HDL)
+# 14. Low-density lipoprotein (TRIGLY)
+# 15. Blood pressure (BPX)
+# 16. Aspirin therapy (RXQASA)
 
 #
 # After joining the tables across years, this script implements the same
 # filtering on age, BMI, and pregnancy status described in Aggarwal et al. (2022).
 # We also replicate this paper's method of constructing the diabetes labels.
 #
-# The full data object is written to the path specified in write_path.
+# The full data object is written to the path specified in data_object_write_path
+
+# The second part of this script constructs a synthetic datasset of individuals
+# not receiving treatment for cardviovascular conditions.
+# 
+# This data object is written to the path specifid in data_object_write_path
 
 library(haven)
 library(tidyverse)
@@ -38,6 +46,7 @@ download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/BPQ_G.XPT", bpq <- tem
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/BMX_G.XPT", bmx <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/GHB_G.XPT", ghb <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/HIQ_G.XPT", hiq <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/FSQ_G.XPT", fsq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/PAQ_G.XPT", paq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/MCQ_G.XPT", mcq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/DPQ_G.XPT", dpq <- tempfile(), mode="wb")
@@ -45,6 +54,8 @@ download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/SMQ_G.XPT", smq <- tem
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/TCHOL_G.XPT", tchol <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/HDL_G.XPT", hdl <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/TRIGLY_G.XPT", trigly <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/BPX_G.XPT", bpx <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2011-2012/RXQASA_G.XPT", rxqasa <- tempfile(), mode="wb")
 
 raw_demographics_11_12 <- foreign::read.xport(demo) %>% 
   clean_names()
@@ -57,6 +68,8 @@ raw_body_measurements_11_12 <- foreign::read.xport(bmx) %>%
 raw_glycohemoglobin_11_12 <- foreign::read.xport(ghb) %>% 
   clean_names()
 raw_health_ins_11_12 <- foreign::read.xport(hiq) %>% 
+  clean_names()
+raw_food_insec_11_12 <- foreign::read.xport(fsq) %>% 
   clean_names()
 raw_physical_act_11_12 <- foreign::read.xport(paq) %>% 
   clean_names()
@@ -72,6 +85,10 @@ raw_hdl_11_12 <- foreign::read.xport(hdl) %>%
   clean_names()
 raw_ldl_11_12 <- foreign::read.xport(trigly) %>% 
   clean_names()
+raw_bpx_11_12 <- foreign::read.xport(bpx) %>% 
+  clean_names()
+raw_aspirin_11_12 <- foreign::read.xport(rxqasa) %>% 
+  clean_names()
 
 
 
@@ -82,6 +99,7 @@ download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/BPQ_H.XPT", bpq <- tem
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/BMX_H.XPT", bmx <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/GHB_H.XPT", ghb <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/HIQ_H.XPT", hiq <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/FSQ_H.XPT", fsq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/PAQ_H.XPT", paq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/MCQ_H.XPT", mcq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/DPQ_H.XPT", dpq <- tempfile(), mode="wb")
@@ -89,6 +107,9 @@ download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/SMQ_H.XPT", smq <- tem
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/TCHOL_H.XPT", tchol <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/HDL_H.XPT", hdl <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/TRIGLY_H.XPT", trigly <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/BPX_H.XPT", bpx <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/BPX_H.XPT", bpx <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2013-2014/RXQASA_H.XPT", rxqasa <- tempfile(), mode="wb")
 
 raw_demographics_13_14 <- foreign::read.xport(demo) %>% 
   clean_names()
@@ -101,6 +122,8 @@ raw_body_measurements_13_14 <- foreign::read.xport(bmx) %>%
 raw_glycohemoglobin_13_14 <- foreign::read.xport(ghb) %>% 
   clean_names()
 raw_health_ins_13_14 <- foreign::read.xport(hiq) %>% 
+  clean_names()
+raw_food_insec_13_14 <- foreign::read.xport(fsq) %>% 
   clean_names()
 raw_physical_act_13_14 <- foreign::read.xport(paq) %>% 
   clean_names()
@@ -116,7 +139,10 @@ raw_hdl_13_14 <- foreign::read.xport(hdl) %>%
   clean_names()
 raw_ldl_13_14 <- foreign::read.xport(trigly) %>% 
   clean_names()
-
+raw_bpx_13_14 <- foreign::read.xport(bpx) %>% 
+  clean_names()
+raw_aspirin_13_14 <- foreign::read.xport(rxqasa) %>% 
+  clean_names()
 
 
 # 2015-2016
@@ -126,6 +152,7 @@ download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/BPQ_I.XPT", bpq <- tem
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/BMX_I.XPT", bmx <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/GHB_I.XPT", ghb <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/HIQ_I.XPT", hiq <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/FSQ_I.XPT", fsq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/PAQ_I.XPT", paq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/MCQ_I.XPT", mcq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/DPQ_I.XPT", dpq <- tempfile(), mode="wb")
@@ -133,6 +160,8 @@ download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/SMQ_I.XPT", smq <- tem
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/TCHOL_I.XPT", tchol <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/HDL_I.XPT", hdl <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/TRIGLY_I.XPT", trigly <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/BPX_I.XPT", bpx <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2015-2016/RXQASA_I.XPT", rxqasa <- tempfile(), mode="wb")
 
 raw_demographics_15_16 <- foreign::read.xport(demo) %>% 
   clean_names()
@@ -145,6 +174,8 @@ raw_body_measurements_15_16 <- foreign::read.xport(bmx) %>%
 raw_glycohemoglobin_15_16 <- foreign::read.xport(ghb) %>% 
   clean_names()
 raw_health_ins_15_16 <- foreign::read.xport(hiq) %>% 
+  clean_names()
+raw_food_insec_15_16 <- foreign::read.xport(fsq) %>% 
   clean_names()
 raw_physical_act_15_16 <- foreign::read.xport(paq) %>% 
   clean_names()
@@ -160,6 +191,10 @@ raw_hdl_15_16 <- foreign::read.xport(hdl) %>%
   clean_names()
 raw_ldl_15_16 <- foreign::read.xport(trigly) %>% 
   clean_names()
+raw_bpx_15_16 <- foreign::read.xport(bpx) %>% 
+  clean_names()
+raw_aspirin_15_16 <- foreign::read.xport(rxqasa) %>% 
+  clean_names()
 
 
 # 2017-2018
@@ -169,6 +204,7 @@ download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/BPQ_J.XPT", bpq <- tem
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/BMX_J.XPT", bmx <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/GHB_J.XPT", ghb <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/HIQ_J.XPT", hiq <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/FSQ_J.XPT", fsq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/PAQ_J.XPT", paq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/MCQ_J.XPT", mcq <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/DPQ_J.XPT", dpq <- tempfile(), mode="wb")
@@ -176,6 +212,8 @@ download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/SMQ_J.XPT", smq <- tem
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/TCHOL_J.XPT", tchol <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/HDL_J.XPT", hdl <- tempfile(), mode="wb")
 download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/TRIGLY_J.XPT", trigly <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/BPX_J.XPT", bpx <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/nchs/nhanes/2017-2018/RXQASA_J.XPT", rxqasa <- tempfile(), mode="wb")
 
 raw_demographics_17_18 <- foreign::read.xport(demo) %>% 
   clean_names()
@@ -188,6 +226,8 @@ raw_body_measurements_17_18 <- foreign::read.xport(bmx) %>%
 raw_glycohemoglobin_17_18 <- foreign::read.xport(ghb) %>% 
   clean_names()
 raw_health_ins_17_18 <- foreign::read.xport(hiq) %>% 
+  clean_names()
+raw_food_insec_17_18 <- foreign::read.xport(fsq) %>% 
   clean_names()
 raw_physical_act_17_18 <- foreign::read.xport(paq) %>% 
   clean_names()
@@ -202,6 +242,10 @@ raw_tchol_17_18 <- foreign::read.xport(tchol) %>%
 raw_hdl_17_18 <- foreign::read.xport(hdl) %>% 
   clean_names()
 raw_ldl_17_18 <- foreign::read.xport(trigly) %>% 
+  clean_names()
+raw_bpx_17_18 <- foreign::read.xport(bpx) %>% 
+  clean_names()
+raw_aspirin_17_18 <- foreign::read.xport(rxqasa) %>% 
   clean_names()
 
 
@@ -253,6 +297,14 @@ raw_health_ins_all <- bind_rows(
   raw_health_ins_13_14,
   raw_health_ins_15_16,
   raw_health_ins_17_18
+)
+
+# Food insecurity data
+raw_food_insec_all <- bind_rows(
+  raw_food_insec_11_12,
+  raw_food_insec_13_14,
+  raw_food_insec_15_16,
+  raw_food_insec_17_18
 )
 
 # Physical activity data
@@ -311,12 +363,29 @@ raw_ldl_all <- bind_rows(
   raw_ldl_17_18
 )
 
+# Blood pressure data
+raw_bpx_all <- bind_rows(
+  raw_bpx_11_12,
+  raw_bpx_13_14,
+  raw_bpx_15_16,
+  raw_bpx_17_18
+)
+
+# Aspirin data
+raw_aspirin_all <- bind_rows(
+  raw_aspirin_11_12,
+  raw_aspirin_13_14,
+  raw_aspirin_15_16,
+  raw_aspirin_17_18
+)
+
 write_csv(raw_demographics_all, file = paste(table_write_path, "raw_demographics_all.csv", sep = ""))
 write_csv(raw_survey_responses_all, file = paste(table_write_path, "raw_survey_responses_all.csv", sep = ""))
 write_csv(raw_bp_and_chol_all, file = paste(table_write_path, "raw_bp_and_chol_all.csv", sep = ""))
 write_csv(raw_body_measurements_all, file = paste(table_write_path, "raw_body_measurements_all.csv", sep = ""))
 write_csv(raw_glycohemoglobin_all, file = paste(table_write_path, "raw_glycohemoglobin_all.csv", sep = ""))
 write_csv(raw_health_ins_all, file = paste(table_write_path, "raw_health_ins_all.csv", sep = ""))
+write_csv(raw_food_insec_all, file = paste(table_write_path, "raw_food_insec_all.csv", sep = ""))
 write_csv(raw_physical_act_all, file = paste(table_write_path, "raw_physical_act_all.csv", sep = ""))
 write_csv(raw_medical_cond_all, file = paste(table_write_path, "raw_medical_cond_all.csv", sep = ""))
 write_csv(raw_mental_health_all, file = paste(table_write_path, "raw_mental_health_all.csv", sep = ""))
@@ -324,18 +393,8 @@ write_csv(raw_smoking_all, file = paste(table_write_path, "raw_smoking_all.csv",
 write_csv(raw_tchol_all, file = paste(table_write_path, "raw_tchol_all.csv", sep = ""))
 write_csv(raw_hdl_all, file = paste(table_write_path, "raw_hdl_all.csv", sep = ""))
 write_csv(raw_ldl_all, file = paste(table_write_path, "raw_ldl_all.csv", sep = ""))
-
-
-
-
-
-
-
-
-
-
-
-
+write_csv(raw_bpx_all, file = paste(table_write_path, "raw_bpx_all.csv", sep = ""))
+write_csv(raw_aspirin_all, file = paste(table_write_path, "raw_aspirin_all.csv", sep = ""))
 
 
 
@@ -347,25 +406,21 @@ data <- raw_demographics_all %>%
   inner_join(raw_body_measurements_all, by = c("seqn")) %>%
   inner_join(raw_glycohemoglobin_all, by = c("seqn")) %>%
   inner_join(raw_health_ins_all, by = c("seqn")) %>%
+  inner_join(raw_food_insec_all, by = c("seqn")) %>%
   inner_join(raw_physical_act_all, by = c("seqn")) %>%
   inner_join(raw_medical_cond_all, by = c("seqn")) %>%
   inner_join(raw_mental_health_all, by = c("seqn")) %>%
   inner_join(raw_smoking_all, by = c("seqn")) %>%
-  # inner_join(raw_tchol_all, by = c("seqn")) %>%
-  # inner_join(raw_hdl_all, by = c("seqn")) %>%
-  # inner_join(raw_ldl_all, by = c("seqn")) %>%
+  inner_join(raw_tchol_all, by = c("seqn")) %>%
+  inner_join(raw_hdl_all, by = c("seqn")) %>%
+  inner_join(raw_ldl_all, by = c("seqn")) %>%
+  inner_join(raw_bpx_all, by = c("seqn")) %>%
+  inner_join(raw_aspirin_all, by = c("seqn")) %>%
   filter(ridageyr >= 18) %>% # Taken from Supplement
   filter(ridageyr <= 70) %>%
   filter(ridexprg != 1 | is.na(ridexprg)) %>%
   filter(bmxbmi >= 18.5, # Taken from Supplement
          bmxbmi <= 50) %>%
-  # For this condition, we allow NA responses because 
-  # an NA response indicates that the patient was never 
-  # told to take statins and therefore weren't asked
-  # whether they were currently using statins, hence the NA.
-  # A value of 2 indicates a negative response even though
-  # they were told to take statins 
-  filter(is.na(bpq100d) | (bpq100d == 2)) %>%
   # Making the race variable more readable
   mutate(
     race = case_when(ridreth3 == 1 | ridreth3 == 2 ~ "Hispanic",
@@ -401,6 +456,20 @@ data <- raw_demographics_all %>%
                                       hiq011 == 2 ~ "No",
                                       hiq011 %in% c(7, 9, ".") ~ as.character(NA))
   ) %>%
+  # Recoding the food security codes to interpretable values
+  mutate(food_security = case_when(fsd032a == 1 ~ "Often worried",
+                                   fsd032a == 2 ~ "Sometimes worried",
+                                   fsd032a == 3 ~ "Never worried",
+                                   fsd032a %in% c(7, 9, ".") ~ as.character(NA))
+  ) %>%
+  # Recoding the blood relatives had diabetes covariate
+  mutate(relatives_had_diabetes = case_when(mcq300c == 1 ~ "Yes",
+                                            mcq300c == 2 ~ "No",
+                                            mcq300c %in% c(7, 9, ".") ~ as.character(NA))) %>%
+  # Recoding the blood relatives had heart attack covariate
+  mutate(relatives_had_heart_attack = case_when(mcq300a == 1 ~ "Yes",
+                                            mcq300a == 2 ~ "No",
+                                            mcq300a %in% c(7, 9, ".") ~ as.character(NA))) %>%
   # Recoding the felt depressed covariate
   mutate(felt_depressed = case_when(dpq020 == 0 ~ "Not at all",
                                     dpq020 == 1 ~ "Several days",
@@ -432,6 +501,90 @@ data <- raw_demographics_all %>%
   # Extracting smoking label (smokes everyday or sometimes)
   mutate(smokes = (smq040 == 1) | (smq040 == 2)) %>%
   # Normalizing weights for numerical stability in regressions
-  mutate(normalized_weights = wtmec8yr / sum(wtmec8yr))
+  mutate(normalized_weights = wtmec8yr / sum(wtmec8yr)) %>%
+  # Constructing feature of whether or not respondent is taking statins
+  # A response of NA mans that a respondent was never recommended
+  # statins, therefore they are not taking them
+  mutate(statins = (bpq100d == 1) & (!is.na(bpq100d))) %>%
+  # Constructing feature of whether or not respondent is taking hypertension meds
+  # A response of NA mans that a respondent was never recommended
+  # medication, therefore they are not taking any
+  mutate(hypertension_treatment = (bpq050a == 1) & (!is.na(bpq050a))) %>%
+  # Constructing feature of whether or not respondent is taking aspirin
+  mutate(aspirin_dr = (rxq515 == 1) & (!is.na(rxq515)), # taking dr. recommended aspirin
+         aspirin_self = (rxq520 == 1) & (!is.na(rxq520)), # self-directed aspirin
+         aspirin = (aspirin_dr | aspirin_self)) %>%
+  mutate(hypertension_treatment = (bpq050a == 1) & (!is.na(bpq050a))) %>%
+  # Computing the average of three blood pressure readings
+  rowwise() %>%
+  mutate(sys_bp = mean(c(bpxsy1, bpxsy2, bpxsy3, bpxsy4), na.rm = TRUE)) %>%
+  ungroup()
 
 saveRDS(data, file = paste(data_object_write_path, "cvd_data.rds", sep = ""))
+
+# ==============================================================================
+# ============================ Synthetic data set ==============================
+
+# Inputs to ASCVD Risk Model: 
+# Gender (gender)
+# Age (ridageyr)
+# Race (race)
+# Total cholesterol (lbxtc)
+# LDL cholesterol (lbdldl)
+# HDL cholesterol (lbdhdd)
+# Treatment with statin (statins)
+# Systolic blood pressure (sys_bp)
+# Treatment for hypertension (hypertension_treatment)
+# History of diabetes (diabetes)
+# Current smoker (smokes)
+# Aspirin therapy (aspirin)
+
+complex_model_formula <- cvd ~ gender + ridageyr + race + lbxtc + lbdldl + 
+  lbdhdd + statins + sys_bp + hypertension_treatment + diabetes + smokes + 
+  aspirin + relatives_had_diabetes + relatives_had_heart_attack + 
+  felt_depressed + income + health_insurance  + food_security 
+
+complex_model <- glm(complex_model_formula,
+                     data = data,
+                     family = "binomial",
+                     weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
+
+data_no_treatment <- data %>%
+  mutate(statins = TRUE,
+         hypertension_treatment = TRUE,
+         aspirin = TRUE) %>%
+  select(gender, ridageyr, race,
+         lbxtc, lbdldl, lbdhdd,
+         statins, sys_bp, hypertension_treatment,
+         diabetes, smokes, aspirin,
+         relatives_had_diabetes, relatives_had_heart_attack, felt_depressed,
+         income, health_insurance, food_security,
+         cvd, wtmec8yr)
+
+cvd_risk_no_treatment <- predict(complex_model, newdata = data_no_treatment, type = "response")
+plot(cvd_risk_no_treatment)
+summary(cvd_risk_no_treatment)
+
+# ======== This is test code -- delete later ========
+# cvd_risk <- predict(complex_model, newdata = data, type = "response")
+# plot(cvd_risk)
+# summary(cvd_risk)
+# 
+# test_model_data <- data %>% filter(!statins, !hypertension_treatment, !aspirin)
+# test_model_formula <- cvd ~ gender + ridageyr + race + lbxtc + lbdldl + 
+#   lbdhdd + sys_bp + diabetes + smokes
+# test_model <- glm(test_model_formula,
+#                  data = test_model_data,
+#                  family = "binomial",
+#                  weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
+# test_model_pred <- predict(test_model, newdata = test_model_data, type = "response") 
+# plot(test_model_pred)
+# summary(test_model_pred)
+
+set.seed(1)
+synthetic_data <- data_no_treatment %>%
+  mutate(pred_no_treatment = cvd_risk_no_treatment,
+         cvd = runif(n()) <= pred_no_treatment) %>%
+  select(-pred_no_treatment)
+
+saveRDS(synthetic_data, file = paste(data_object_write_path, "synthetic_cvd_data.rds", sep = ""))

@@ -25,6 +25,20 @@ theme_set(theme_bw(base_size = 15))
 # PAQ706 - Days physically active at least 60 min. <--- something weird about why this is NA when we 
 # inner join with bp_and_chol
 
+# Inputs to ASCVD Risk Model: 
+# Gender (gender)
+# Age (ridageyr)
+# Race (race)
+# Total cholesterol (lbxtc)
+# LDL cholesterol (lbdldl)
+# HDL cholesterol (lbdhdd)
+# Treatment with statin (statins)
+# Systolic blood pressure (sys_bp)
+# Treatment for hypertension (hypertension_treatment)
+# History of diabetes (diabetes)
+# Current smoker (smokes)
+# Aspirin therapy (aspirin)
+
 # This is our race-aware logistic regression model
 # race_aware_formula <- cvd ~ (ridageyr*bmxbmi) + race + as.factor(ntile(data$bmxbmi, 10))
 race_aware_formula <- cvd ~ ridageyr + bpq020 + smokes + bpq080 + diabetes + bmxbmi + gender + race
