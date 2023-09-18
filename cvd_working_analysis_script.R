@@ -65,25 +65,26 @@ get_smoothed_plot_data <- function(predictions, data, risk_lower_bound, risk_upp
   return(plot_data)
 }
 
-risk_score_upper_bound <- 0.6
-incidence_upper_bound <- 0.6
-race_blind_calibration_plot_data <- get_smoothed_plot_data(race_blind_model_pred, synthetic_data, 0, risk_score_upper_bound)
+risk_score_upper_bound <- 0.4
+incidence_upper_bound <- 0.45
+race_blind_calibration_plot_data <- get_smoothed_plot_data(race_blind_model_pred, synthetic_data, 0, 0.6)
 
 race_blind_calibration_plot_data %>%
   ggplot(aes(x=risk_score, y=smoothed_cvd, color=race)) +
   geom_vline(xintercept=0.2) +
-  geom_line() +
-  geom_point() +
+  geom_line(linewidth=0.75) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
   xlab("Race-unaware predicted risk") +
   ylab("Observed CVD rate") +
   scale_y_continuous(labels = scales::percent,
                      breaks = seq(0.0, incidence_upper_bound, 0.04)) +
   scale_x_continuous(labels = scales::percent,
-                     breaks = seq(0.0, risk_score_upper_bound, 0.06)) +
-  coord_cartesian(xlim = c(0.1, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
+                     breaks = seq(0.0, risk_score_upper_bound, 0.05)) +
+  coord_cartesian(xlim = c(0.0, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
   theme(legend.title = element_blank(),
-        legend.position = c(0.35, 0.84)) 
+        legend.position = c(0.35, 0.84)) +
+  scale_color_manual(values=group_color_map,
+                     breaks = group_names)
 
 
 race_aware_calibration_plot_data <- get_smoothed_plot_data(race_aware_model_pred, synthetic_data, 0, 0.6)
@@ -91,15 +92,16 @@ race_aware_calibration_plot_data <- get_smoothed_plot_data(race_aware_model_pred
 race_aware_calibration_plot_data %>%
   ggplot(aes(x=risk_score, y=smoothed_cvd, color=race)) +
   geom_vline(xintercept=0.2) +
-  geom_line() +
-  geom_point() +
+  geom_line(linewidth=0.75) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
   xlab("Race-aware predicted risk") +
   ylab("Observed CVD rate") +
   scale_y_continuous(labels = scales::percent,
                      breaks = seq(0.0, incidence_upper_bound, 0.04)) +
   scale_x_continuous(labels = scales::percent,
-                     breaks = seq(0.0, risk_score_upper_bound, 0.06)) +
-  coord_cartesian(xlim = c(0.1, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
+                     breaks = seq(0.0, risk_score_upper_bound, 0.05)) +
+  coord_cartesian(xlim = c(0.0, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
   theme(legend.title = element_blank(),
-        legend.position = c(0.35, 0.84)) 
+        legend.position = c(0.35, 0.84)) +
+  scale_color_manual(values=group_color_map,
+                     breaks = group_names)
