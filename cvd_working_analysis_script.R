@@ -7,6 +7,7 @@
 library(tidyverse)
 library(readr)
 library(janitor)
+library(stats)
 
 directory_path <- dirname(rstudioapi::getActiveDocumentContext()$path)
 save_path <- here::here(directory_path, 'figures/')
@@ -30,8 +31,8 @@ race_blind_model <- glm(race_blind_formula,
                           weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
 race_blind_model_pred <- predict(race_blind_model, newdata = synthetic_data, type = "response")
 
-race_aware_formula <- cvd ~ race + gender + ridageyr + lbxtc + lbdldl + 
-  lbdhdd + sys_bp + diabetes + smokes
+race_aware_formula <- cvd ~ race * (gender + ridageyr + lbxtc + lbdldl + 
+  lbdhdd + sys_bp + diabetes + smokes)
 race_aware_model <- glm(race_aware_formula,
                           data = synthetic_data,
                           family = "binomial",
@@ -56,6 +57,7 @@ get_smoothed_plot_data <- function(predictions, data, risk_lower_bound, risk_upp
     cvd = data$cvd,
     race = data$race
   )
+  
   smoothing_model <- glm(cvd ~ risk_score*race, data = smoothing_data, family = "binomial")
   plot_data <- data.frame(
     risk_score = seq(risk_lower_bound, risk_upper_bound, by = 0.01),
@@ -65,9 +67,50 @@ get_smoothed_plot_data <- function(predictions, data, risk_lower_bound, risk_upp
   return(plot_data)
 }
 
+# NOTE : DO WE NEED WEIGHTS HERE ????? 
+
+get_isotonically_smoothed_plot_data <- function(predictions, data, risk_lower_bound, risk_score_upper_bound) {
+  smoothing_data <- data.frame(
+    risk_score = predictions,
+    cvd = data$cvd,
+    race = data$race
+  ) %>%
+  drop_na()
+  
+  race_groups = unique(smoothing_data$race)
+  x <- smoothing_data$risk_score
+  y <- smoothing_data$cvd
+  # iso_reg <- isoreg(x, y)
+  
+  isofit <- as.stepfun(isoreg(x, y))
+  plot_data <- seq(risk_lower_bound, risk_upper_bound, by = 0.01)
+  plot(plot_data, isofit(plot_data))
+  lines(plot_data, isofit(plot_data))
+  # # Assume you have new data for which you want to make predictions
+  # plot_data <- data.frame(
+  #   risk_score = ,
+  #   race = rep(c("Black", "White", "Hispanic", "Asian"), each = ((risk_upper_bound - risk_lower_bound) * 100) + 1)
+  # )
+  # 
+  # # Create an interpolated function based on the fitted values
+  # iso_reg_fun <- approxfun(x = iso_reg$x, y = iso_reg$yf)
+  # 
+  # # Use the interpolated function to make predictions
+  # predictions <- iso_reg_fun(new_data)
+  # 
+  # # Print the predictions
+  # print(predictions)
+  
+  # plot(x, y, main = "Isotonic Regression", xlab = "X", ylab = "Y")
+  # lines(iso_reg)
+  # summary(iso_reg)
+}
+
+
+
 risk_score_upper_bound <- 0.4
 incidence_upper_bound <- 0.45
-race_blind_calibration_plot_data <- get_smoothed_plot_data(race_blind_model_pred, synthetic_data, 0, 0.6)
+race_blind_calibration_plot_data <- get_isotonically_smoothed_plot_data(race_blind_model_pred, synthetic_data, 0, 0.6)
 
 race_blind_calibration_plot_data %>%
   ggplot(aes(x=risk_score, y=smoothed_cvd, color=race)) +
