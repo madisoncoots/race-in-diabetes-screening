@@ -14,7 +14,6 @@ save_path <- here::here(directory_path, 'figures/')
 
 source(here::here(directory_path, 'colors.R'))
 
-data <- readRDS(here::here(directory_path, 'data/processed', 'cvd_data.rds'))
 synthetic_data <- readRDS(here::here(directory_path, 'data/processed', 'synthetic_cvd_data.rds'))
 
 theme_set(theme_bw(base_size = 15))
@@ -128,17 +127,17 @@ calibrated_race_blind_df <- calibrate_blind_model_pred(race_blind_model, synthet
 race_blind_calibration_plot_data <- get_smoothed_plot_data(calibrated_race_blind_df, synthetic_data, 0, 0.5)
 race_blind_calibration_plot_data %>% head()
 
-# race_blind_calibration_plot_data %>%
-data %>%
-  select(seqn, race, cvd, wtmec8yr) %>%
-  inner_join(calibrated_race_blind_df, by = c("seqn")) %>%
-  inner_join(large_model_pred, by = c("seqn")) %>%
-  mutate(calibrated_pred_bin = floor((calibrated_pred  + 0.0025) * 100 * 2) / 2 / 100) %>% # round to the nearest 0.005
-  drop_na() %>%
-  group_by(race, calibrated_pred_bin) %>%
-  summarize(n_in_bin = sum(wtmec8yr),
-            calibrated_pred = sum(calibrated_pred * wtmec8yr) / sum(wtmec8yr),
-            smoothed_cvd = sum(p_cvd * wtmec8yr) / sum(wtmec8yr)) %>%
+race_blind_calibration_plot_data %>%
+# data %>%
+#   select(seqn, race, cvd, wtmec8yr) %>%
+#   inner_join(calibrated_race_blind_df, by = c("seqn")) %>%
+#   inner_join(large_model_pred, by = c("seqn")) %>%
+#   mutate(calibrated_pred_bin = floor((calibrated_pred  + 0.0025) * 100 * 2) / 2 / 100) %>% # round to the nearest 0.005
+#   drop_na() %>%
+#   group_by(race, calibrated_pred_bin) %>%
+#   summarize(n_in_bin = sum(wtmec8yr),
+#             calibrated_pred = sum(calibrated_pred * wtmec8yr) / sum(wtmec8yr),
+#             smoothed_cvd = sum(p_cvd * wtmec8yr) / sum(wtmec8yr)) %>%
   ggplot(aes(x=calibrated_pred, y=smoothed_cvd, color=race)) +
   geom_vline(xintercept=0.2) +
   geom_smooth(linewidth=0.75, se = FALSE, span = 5) +
@@ -160,17 +159,17 @@ calibrated_race_aware_df <- calibrate_model_pred(race_aware_model, synthetic_dat
 race_aware_calibration_plot_data <- get_smoothed_plot_data(calibrated_race_aware_df, synthetic_data, 0, 0.5)
 race_aware_calibration_plot_data %>% head()
 
-# race_aware_calibration_plot_data %>%
-data %>%
-  select(seqn, race, cvd, wtmec8yr) %>%
-  inner_join(calibrated_race_aware_df, by = c("seqn")) %>%
-  inner_join(large_model_pred, by = c("seqn")) %>%
-  mutate(calibrated_pred_bin = floor((calibrated_pred  + 0.0025) * 100 * 2) / 2 / 100) %>% # round to the nearest 0.005
-  drop_na() %>%
-  group_by(race, calibrated_pred_bin) %>%
-  summarize(n_in_bin = sum(wtmec8yr),
-            calibrated_pred = sum(calibrated_pred * wtmec8yr) / sum(wtmec8yr),
-            smoothed_cvd = sum(p_cvd * wtmec8yr) / sum(wtmec8yr)) %>%
+race_aware_calibration_plot_data %>%
+# data %>%
+#   select(seqn, race, cvd, wtmec8yr) %>%
+#   inner_join(calibrated_race_aware_df, by = c("seqn")) %>%
+#   inner_join(large_model_pred, by = c("seqn")) %>%
+#   mutate(calibrated_pred_bin = floor((calibrated_pred  + 0.0025) * 100 * 2) / 2 / 100) %>% # round to the nearest 0.005
+#   drop_na() %>%
+#   group_by(race, calibrated_pred_bin) %>%
+#   summarize(n_in_bin = sum(wtmec8yr),
+#             calibrated_pred = sum(calibrated_pred * wtmec8yr) / sum(wtmec8yr),
+#             smoothed_cvd = sum(p_cvd * wtmec8yr) / sum(wtmec8yr)) %>%
   ggplot(aes(x=calibrated_pred, y=smoothed_cvd, color=race)) +
   geom_vline(xintercept=0.2) +
   geom_smooth(linewidth=0.75, se = FALSE, span = 5) +

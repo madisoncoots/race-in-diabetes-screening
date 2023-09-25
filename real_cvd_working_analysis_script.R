@@ -14,7 +14,8 @@ save_path <- here::here(directory_path, 'figures/')
 
 source(here::here(directory_path, 'colors.R'))
 
-data <- readRDS(here::here(directory_path, 'data/processed', 'cvd_data.rds'))
+data <- readRDS(here::here(directory_path, 'data/processed', 'cvd_data.rds')) %>%
+  filter(race != "Asian")
 
 theme_set(theme_bw(base_size = 15))
 
@@ -23,31 +24,34 @@ theme_set(theme_bw(base_size = 15))
 # ====================================== Models =============================================
 
 race_blind_formula <- cvd ~ gender + ridageyr + lbxtc + lbdldl + 
-  lbdhdd + sys_bp + diabetes + smokes + aspirin + statins + hypertension_treatment
+  lbdhdd + statins + sys_bp + dias_bp + hypertension_treatment + diabetes + smokes + 
+  aspirin 
 race_blind_model <- glm(race_blind_formula,
                           data = data,
                           family = "binomial",
                           weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
 race_blind_model_pred <- predict(race_blind_model, newdata = data, type = "response")
 
-race_aware_formula <- cvd ~ race + (gender + ridageyr + lbxtc + lbdldl + 
-  lbdhdd + sys_bp + diabetes + smokes + aspirin + statins + hypertension_treatment)
+race_aware_formula <- cvd ~ gender + ridageyr  + lbxtc + lbdldl + 
+  lbdhdd + race*statins + sys_bp + dias_bp + hypertension_treatment + diabetes + race*smokes + 
+  race*aspirin
+
 race_aware_model <- glm(race_aware_formula,
                           data = data,
                           family = "binomial",
                           weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
 race_aware_model_pred <- predict(race_aware_model, newdata = data, type = "response")
 
-large_model_formula <- cvd ~ race + (gender + ridageyr + lbxtc + lbdldl + 
-  lbdhdd + sys_bp + diabetes + smokes + aspirin + statins + hypertension_treatment +
-    felt_depressed + income + health_insurance + food_security)
-large_model <- glm(large_model_formula,
-                   data = data,
-                   family = "binomial",
-                   weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
-large_model_pred <- data %>%
-  mutate(p_cvd = predict(large_model, newdata = data, type = "response")) %>%
-  select(seqn, p_cvd)
+# large_model_formula <- cvd ~ race + (gender + ridageyr + lbxtc + lbdldl + 
+#   lbdhdd + sys_bp + diabetes + smokes +
+#     felt_depressed + income + health_insurance + food_security)
+# large_model <- glm(large_model_formula,
+#                    data = data,
+#                    family = "binomial",
+#                    weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
+# large_model_pred <- data %>%
+#   mutate(p_cvd = predict(large_model, newdata = data, type = "response")) %>%
+#   select(seqn, p_cvd)
 
 # ===========================================================================================
 # ================================= Plotting Functions ======================================
@@ -187,6 +191,27 @@ race_aware_calibration_plot_data %>%
   scale_color_manual(values=group_color_map,
                      breaks = group_names)
 
+
+
+data.frame(race_aware_pred = race_aware_model_pred,
+           cvd = as.integer(data$cvd),
+           race = data$race) %>% 
+  filter(race != "Asian") %>%
+  ggplot(aes(x = race_aware_pred, y = cvd, color=race)) +
+  geom_smooth(se = FALSE) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray")
+
+# hist(race_aware_model_pred)
+
+data.frame(race_blind_pred = race_blind_model_pred,
+           cvd = as.integer(data$cvd),
+           race = data$race) %>% 
+  filter(race != "Asian") %>%
+  ggplot(aes(x = race_blind_pred, y = cvd, color=race)) +
+  geom_smooth(se = FALSE) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray")
+
+summary(race_aware_model)
 
 # ===========================================================================================
 # ====================================== Tables =============================================

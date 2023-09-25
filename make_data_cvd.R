@@ -517,8 +517,15 @@ data <- raw_demographics_all %>%
   mutate(hypertension_treatment = (bpq050a == 1) & (!is.na(bpq050a))) %>%
   # Computing the average of three blood pressure readings
   rowwise() %>%
-  mutate(sys_bp = mean(c(bpxsy1, bpxsy2, bpxsy3, bpxsy4), na.rm = TRUE)) %>%
-  ungroup()
+  mutate(sys_bp = mean(c(bpxsy1, bpxsy2, bpxsy3, bpxsy4), na.rm = TRUE),
+         dias_bp = mean(c(bpxdi1, bpxdi2, bpxdi3, bpxdi4), na.rm = TRUE)) %>%
+  ungroup() %>%
+  select(seqn, gender, ridageyr, race,
+         lbxtc, lbdldl, lbdhdd,
+         statins, sys_bp, dias_bp, hypertension_treatment,
+         diabetes, smokes, aspirin,
+         cvd, wtmec8yr) %>%
+  drop_na()
 
 saveRDS(data, file = paste(data_object_write_path, "cvd_data.rds", sep = ""))
 
@@ -539,20 +546,19 @@ saveRDS(data, file = paste(data_object_write_path, "cvd_data.rds", sep = ""))
 # Current smoker (smokes)
 # Aspirin therapy (aspirin)
 
-complex_model_formula <- cvd ~ gender + ridageyr + race + lbxtc + lbdldl + 
-  lbdhdd + statins + sys_bp + hypertension_treatment + diabetes + smokes + 
-  aspirin + relatives_had_diabetes + relatives_had_heart_attack + 
-  felt_depressed + income + health_insurance  + food_security 
+risk_model_formula <- cvd ~ gender + ridageyr + race + lbxtc + lbdldl + 
+  lbdhdd + statins + sys_bp + dias_bp + hypertension_treatment + diabetes + smokes + 
+  aspirin 
 
-complex_model <- glm(complex_model_formula,
+risk_model <- glm(risk_model_formula,
                      data = data,
                      family = "binomial",
                      weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
 
 data_no_treatment <- data %>%
-  mutate(statins = TRUE,
-         hypertension_treatment = TRUE,
-         aspirin = TRUE) %>%
+  mutate(statins = FALSE,
+         hypertension_treatment = FALSE,
+         aspirin = FALSE) %>%
   select(seqn, gender, ridageyr, race,
          lbxtc, lbdldl, lbdhdd,
          statins, sys_bp, hypertension_treatment,
@@ -564,7 +570,9 @@ data_no_treatment <- data %>%
 cvd_risk_no_treatment <- predict(complex_model, newdata = data_no_treatment, type = "response")
 plot(cvd_risk_no_treatment)
 summary(cvd_risk_no_treatment)
-
+mean(data$cvd)
+mean(predict(complex_model, newdata = data, type = "response"))
+mean(cvd_risk_no_treatment)
 # ======== This is test code -- delete later ========
 # cvd_risk <- predict(complex_model, newdata = data, type = "response")
 # plot(cvd_risk)
