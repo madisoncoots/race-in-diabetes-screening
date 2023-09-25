@@ -15,38 +15,39 @@ save_path <- here::here(directory_path, 'figures/')
 source(here::here(directory_path, 'colors.R'))
 
 data <- readRDS(here::here(directory_path, 'data/processed', 'cvd_data.rds'))
-synthetic_data <- readRDS(here::here(directory_path, 'data/processed', 'synthetic_cvd_data.rds'))
 
 theme_set(theme_bw(base_size = 15))
 
 # ===========================================================================================
-#==================================== Synthetic Approach ====================================
+#====================================== Real Approach =======================================
 # ====================================== Models =============================================
 
 race_blind_formula <- cvd ~ gender + ridageyr + lbxtc + lbdldl + 
-  lbdhdd + sys_bp + diabetes + smokes
+  lbdhdd + sys_bp + diabetes + smokes + aspirin + statins + hypertension_treatment
 race_blind_model <- glm(race_blind_formula,
-                          data = synthetic_data,
+                          data = data,
                           family = "binomial",
                           weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
-race_blind_model_pred <- predict(race_blind_model, newdata = synthetic_data, type = "response")
+race_blind_model_pred <- predict(race_blind_model, newdata = data, type = "response")
 
 race_aware_formula <- cvd ~ race + (gender + ridageyr + lbxtc + lbdldl + 
-  lbdhdd + sys_bp + diabetes + smokes)
+  lbdhdd + sys_bp + diabetes + smokes + aspirin + statins + hypertension_treatment)
 race_aware_model <- glm(race_aware_formula,
-                          data = synthetic_data,
+                          data = data,
                           family = "binomial",
                           weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
-race_aware_model_pred <- predict(race_aware_model, newdata = synthetic_data, type = "response")
+race_aware_model_pred <- predict(race_aware_model, newdata = data, type = "response")
 
 large_model_formula <- cvd ~ race + (gender + ridageyr + lbxtc + lbdldl + 
-  lbdhdd + sys_bp + diabetes + smokes + felt_depressed + income + 
-  health_insurance + food_security)
+  lbdhdd + sys_bp + diabetes + smokes + aspirin + statins + hypertension_treatment +
+    felt_depressed + income + health_insurance + food_security)
 large_model <- glm(large_model_formula,
-                   data = synthetic_data,
+                   data = data,
                    family = "binomial",
                    weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
-large_model_pred <- predict(large_model, newdata = synthetic_data, type = "response")
+large_model_pred <- data %>%
+  mutate(p_cvd = predict(large_model, newdata = data, type = "response")) %>%
+  select(seqn, p_cvd)
 
 # ===========================================================================================
 # ================================= Plotting Functions ======================================
@@ -122,15 +123,25 @@ get_smoothed_plot_data <- function(pred_df, data, risk_lower_bound, risk_upper_b
 # ===========================================================================================
 # ======================================= Figures ===========================================
 
-calibrated_race_blind_df <- calibrate_blind_model_pred(race_blind_model, synthetic_data)
-race_blind_calibration_plot_data <- get_smoothed_plot_data(calibrated_race_blind_df, synthetic_data, 0, 0.5)
+calibrated_race_blind_df <- calibrate_blind_model_pred(race_blind_model, data)
+race_blind_calibration_plot_data <- get_smoothed_plot_data(calibrated_race_blind_df, data, 0, 0.5)
 race_blind_calibration_plot_data %>% head()
 
 race_blind_calibration_plot_data %>%
+# data %>%
+#   select(seqn, race, cvd, wtmec8yr) %>%
+#   inner_join(calibrated_race_blind_df, by = c("seqn")) %>%
+#   inner_join(large_model_pred, by = c("seqn")) %>%
+#   mutate(calibrated_pred_bin = floor((calibrated_pred  + 0.0025) * 100 * 2) / 2 / 100) %>% # round to the nearest 0.005
+#   drop_na() %>%
+#   group_by(race, calibrated_pred_bin) %>%
+#   summarize(n_in_bin = sum(wtmec8yr),
+#             calibrated_pred = sum(calibrated_pred * wtmec8yr) / sum(wtmec8yr),
+#             smoothed_cvd = sum(p_cvd * wtmec8yr) / sum(wtmec8yr)) %>%
   ggplot(aes(x=calibrated_pred, y=smoothed_cvd, color=race)) +
   geom_vline(xintercept=0.2) +
-  # geom_smooth(linewidth=0.75, se = FALSE, span = 5) +
-  geom_line(linewidth=0.75) +
+  geom_smooth(linewidth=0.75, se = FALSE, span = 5) +
+  # geom_line(linewidth=0.75) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
   xlab("Race-unaware predicted risk") +
   ylab("Observed CVD rate") +
@@ -144,11 +155,21 @@ race_blind_calibration_plot_data %>%
   scale_color_manual(values=group_color_map,
                      breaks = group_names)
 
-calibrated_race_aware_df <- calibrate_model_pred(race_aware_model, synthetic_data)
-race_aware_calibration_plot_data <- get_smoothed_plot_data(calibrated_race_aware_df, synthetic_data, 0, 0.5)
+calibrated_race_aware_df <- calibrate_model_pred(race_aware_model, data)
+race_aware_calibration_plot_data <- get_smoothed_plot_data(calibrated_race_aware_df, data, 0, 0.5)
 race_aware_calibration_plot_data %>% head()
 
 race_aware_calibration_plot_data %>%
+# data %>%
+#   select(seqn, race, cvd, wtmec8yr) %>%
+#   inner_join(calibrated_race_aware_df, by = c("seqn")) %>%
+#   inner_join(large_model_pred, by = c("seqn")) %>%
+#   mutate(calibrated_pred_bin = floor((calibrated_pred  + 0.0025) * 100 * 2) / 2 / 100) %>% # round to the nearest 0.005
+#   drop_na() %>%
+#   group_by(race, calibrated_pred_bin) %>%
+#   summarize(n_in_bin = sum(wtmec8yr),
+#             calibrated_pred = sum(calibrated_pred * wtmec8yr) / sum(wtmec8yr),
+#             smoothed_cvd = sum(p_cvd * wtmec8yr) / sum(wtmec8yr)) %>%
   ggplot(aes(x=calibrated_pred, y=smoothed_cvd, color=race)) +
   geom_vline(xintercept=0.2) +
   geom_smooth(linewidth=0.75, se = FALSE, span = 5) +
@@ -177,9 +198,9 @@ utility_reward <- 5
 screening_cost <- -1
 
 utility_gains_by_group <- 
-  synthetic_data %>% 
+  data %>% 
   select(seqn, race, weights = wtmec8yr) %>%
-  mutate(p_cvd = large_model_pred) %>%
+  inner_join(large_model_pred, by = c("seqn")) %>%
   inner_join(calibrated_race_aware_df %>% rename(race_aware_model_pred = calibrated_pred), by = c("seqn")) %>%
   inner_join(calibrated_race_blind_df %>% rename(race_blind_model_pred = calibrated_pred), by = c("seqn")) %>%
   mutate(race_aware_risk_score = race_aware_model_pred,
@@ -203,9 +224,9 @@ utility_gains_by_group <-
 
 
 overall_utility_gain <- 
-  synthetic_data %>% 
+  data %>% 
   select(seqn, race, weights = wtmec8yr) %>%
-  mutate(p_cvd = large_model_pred) %>%
+  inner_join(large_model_pred, by = c("seqn")) %>%
   inner_join(calibrated_race_aware_df %>% rename(race_aware_model_pred = calibrated_pred), by = c("seqn")) %>%
   inner_join(calibrated_race_blind_df %>% rename(race_blind_model_pred = calibrated_pred), by = c("seqn")) %>%
   mutate(race_aware_risk_score = race_aware_model_pred,

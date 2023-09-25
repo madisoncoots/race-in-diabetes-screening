@@ -588,3 +588,4 @@ synthetic_data <- data_no_treatment %>%
   select(-pred_no_treatment)
 
 saveRDS(synthetic_data, file = paste(data_object_write_path, "synthetic_cvd_data.rds", sep = ""))
+
