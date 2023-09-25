@@ -31,17 +31,17 @@ race_blind_model <- glm(race_blind_formula,
                           weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
 race_blind_model_pred <- predict(race_blind_model, newdata = synthetic_data, type = "response")
 
-race_aware_formula <- cvd ~ race * (gender + ridageyr + lbxtc + lbdldl + 
-  lbdhdd + sys_bp + diabetes + smokes) +
+race_aware_formula <- cvd ~ race + (gender + ridageyr + lbxtc + lbdldl + 
+  lbdhdd + sys_bp + diabetes + smokes)
 race_aware_model <- glm(race_aware_formula,
                           data = synthetic_data,
                           family = "binomial",
                           weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
 race_aware_model_pred <- predict(race_aware_model, newdata = synthetic_data, type = "response")
 
-large_model_formula <- cvd ~ race + gender + ridageyr + lbxtc + lbdldl + 
+large_model_formula <- cvd ~ race + (gender + ridageyr + lbxtc + lbdldl + 
   lbdhdd + sys_bp + diabetes + smokes + felt_depressed + income + 
-  health_insurance + food_security
+  health_insurance + food_security)
 large_model <- glm(large_model_formula,
                    data = synthetic_data,
                    family = "binomial",
@@ -49,60 +49,87 @@ large_model <- glm(large_model_formula,
 large_model_pred <- predict(large_model, newdata = synthetic_data, type = "response")
 
 # ===========================================================================================
-# ====================================== Figures ============================================
+# ================================= Plotting Functions ======================================
 
-get_smoothed_plot_data <- function(predictions, data, risk_lower_bound, risk_upper_bound) {
-  smoothing_data <- data.frame(
-    risk_score = predictions,
-    cvd = data$cvd,
-    race = data$race
-  )
-  
-  smoothing_model <- glm(cvd ~ risk_score*race, data = smoothing_data, family = "binomial")
+calibrate_model_pred <- function(model, data) {
+  # --------------------------------------------
+  # Function to first calibrate the model pred
+  # using isotonic regression.
+  #
+  # Returns a df with the calibrated risk scores
+  # and observation id.
+  # --------------------------------------------
+  uncalibrated_pred <- predict(model, newdata = data, type = "response")
+  data <- data %>%
+    mutate(uncalibrated_pred = uncalibrated_pred) %>%
+    drop_na(uncalibrated_pred, cvd)
+  # Train an isotonic model for each race group
+  race_groups = unique(data$race)
+  return_df <- data.frame()
+  for (r in race_groups) {
+    subset <- data %>% filter(race == r)
+    iso_fit <- as.stepfun(isoreg(subset$uncalibrated_pred, subset$cvd))
+    subset <- subset %>%
+      mutate(calibrated_pred = iso_fit(uncalibrated_pred)) %>%
+      select(seqn, calibrated_pred)
+    return_df <- bind_rows(return_df, subset)
+  }
+  return(return_df)
+}
+
+calibrate_blind_model_pred <- function(model, data) {
+  # --------------------------------------------
+  # Function to first calibrate the blind model 
+  # pred using isotonic regression.
+  #
+  # Returns a df with the calibrated risk scores
+  # and observation id.
+  # --------------------------------------------
+  uncalibrated_pred <- predict(model, newdata = data, type = "response")
+  data <- data %>%
+    mutate(uncalibrated_pred = uncalibrated_pred) %>%
+    drop_na(uncalibrated_pred, cvd)
+  iso_fit <- as.stepfun(isoreg(data$uncalibrated_pred, data$cvd))
+  data <- data %>% mutate(calibrated_pred = iso_fit(uncalibrated_pred)) %>%
+    select(seqn, calibrated_pred)
+  return(data)
+}
+
+get_smoothed_plot_data <- function(pred_df, data, risk_lower_bound, risk_upper_bound) {
+  # --------------------------------------------
+  # Function to smooth noise in the CVD rates
+  # within risk score buckets.
+  #
+  # Returns a df with the calibrated risk scores
+  # and smoothed CVD rates, by race.
+  # --------------------------------------------
+  data <- data %>%
+    inner_join(pred_df, by = c("seqn"))
+  smoothing_model <- glm(cvd ~ calibrated_pred*race, 
+                         data = data, 
+                         family = "binomial",
+                         weights = round(wtmec8yr/1000)
+                         )
   plot_data <- data.frame(
-    risk_score = seq(risk_lower_bound, risk_upper_bound, by = 0.01),
+    calibrated_pred = seq(risk_lower_bound, risk_upper_bound, by = 0.01),
     race = rep(c("Black", "White", "Hispanic", "Asian"), each = ((risk_upper_bound - risk_lower_bound) * 100) + 1)
   ) %>%
     mutate(smoothed_cvd = predict(smoothing_model, newdata = ., type = "response"))
   return(plot_data)
 }
 
-# NOTE : DO WE NEED WEIGHTS HERE ????? 
 
-get_isotonically_smoothed_plot_data <- function(predictions, data, risk_lower_bound, risk_score_upper_bound) {
-  smoothing_data <- data.frame(
-    risk_score = predictions,
-    cvd = data$cvd,
-    race = data$race
-  ) %>%
-  drop_na()
-  
-  # Train an isotonic model for each race group
-  race_groups = unique(smoothing_data$race)
-  plot_data <- data.frame()
-  for (r in race_groups) {
-    subset <- smoothing_data %>% filter(race == r)
-    iso_fit <- as.stepfun(isoreg(subset$risk_score, subset$cvd))
-    # Create plotting data
-    subset_data <- data.frame(
-      risk_score = seq(risk_lower_bound, risk_upper_bound, by = 0.01),
-      race = rep(r, each = ((risk_upper_bound - risk_lower_bound) * 100) + 1)
-      ) %>%
-      mutate(smoothed_cvd = iso_fit(risk_score))
-    plot_data <- bind_rows(plot_data, subset_data)
-  }
-  return(plot_data)
-}
+# ===========================================================================================
+# ======================================= Figures ===========================================
 
-
-
-risk_score_upper_bound <- 0.4
-incidence_upper_bound <- 0.45
-race_blind_calibration_plot_data <- get_smoothed_plot_data(race_blind_model_pred, synthetic_data, 0, 0.6)
+calibrated_race_blind_df <- calibrate_blind_model_pred(race_blind_model, synthetic_data)
+race_blind_calibration_plot_data <- get_smoothed_plot_data(calibrated_race_blind_df, synthetic_data, 0, 0.5)
+race_blind_calibration_plot_data %>% head()
 
 race_blind_calibration_plot_data %>%
-  ggplot(aes(x=risk_score, y=smoothed_cvd, color=race)) +
+  ggplot(aes(x=calibrated_pred, y=smoothed_cvd, color=race)) +
   geom_vline(xintercept=0.2) +
+  # geom_smooth(linewidth=0.75, se = FALSE, span = 5) +
   geom_line(linewidth=0.75) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
   xlab("Race-unaware predicted risk") +
@@ -117,13 +144,15 @@ race_blind_calibration_plot_data %>%
   scale_color_manual(values=group_color_map,
                      breaks = group_names)
 
-
-race_aware_calibration_plot_data <- get_smoothed_plot_data(race_aware_model_pred, synthetic_data, 0, 0.6)
+calibrated_race_aware_df <- calibrate_model_pred(race_aware_model, synthetic_data)
+race_aware_calibration_plot_data <- get_smoothed_plot_data(calibrated_race_aware_df, synthetic_data, 0, 0.5)
+race_aware_calibration_plot_data %>% head()
 
 race_aware_calibration_plot_data %>%
-  ggplot(aes(x=risk_score, y=smoothed_cvd, color=race)) +
+  ggplot(aes(x=calibrated_pred, y=smoothed_cvd, color=race)) +
   geom_vline(xintercept=0.2) +
-  geom_line(linewidth=0.75) +
+  geom_smooth(linewidth=0.75, se = FALSE, span = 5) +
+  # geom_line(linewidth=0.75) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
   xlab("Race-aware predicted risk") +
   ylab("Observed CVD rate") +
@@ -136,3 +165,57 @@ race_aware_calibration_plot_data %>%
         legend.position = c(0.35, 0.84)) +
   scale_color_manual(values=group_color_map,
                      breaks = group_names)
+
+
+# ===========================================================================================
+# ====================================== Tables =============================================
+
+# ========================= Table 1: Utility gains by group  ========================
+
+screening_thresh <- 0.2
+utility_reward <- 5
+screening_cost <- -1
+
+utility_gains_by_group <- 
+  synthetic_data %>% 
+  select(seqn, race, weights = wtmec8yr) %>%
+  mutate(p_cvd = large_model_pred) %>%
+  inner_join(calibrated_race_aware_df %>% rename(race_aware_model_pred = calibrated_pred), by = c("seqn")) %>%
+  inner_join(calibrated_race_blind_df %>% rename(race_blind_model_pred = calibrated_pred), by = c("seqn")) %>%
+  mutate(race_aware_risk_score = race_aware_model_pred,
+         race_blind_risk_score = race_blind_model_pred,
+         race_aware_decision = race_aware_risk_score > screening_thresh,
+         race_blind_decision = race_blind_risk_score > screening_thresh,
+         expected_race_aware_utility = (screening_cost + utility_reward * p_cvd) * race_aware_decision,
+         expected_race_blind_utility = (screening_cost + utility_reward * p_cvd) * race_blind_decision,
+         utility_difference = expected_race_aware_utility - expected_race_blind_utility
+  ) %>%
+  drop_na() %>% # drop observations that have an NA prediction due to missing data
+  group_by(race) %>%
+  summarize(average_utility_diff = sum(utility_difference * weights)/sum(weights)) %>%
+  arrange(desc(average_utility_diff))
+
+# ===========================================================================================
+# ==================================== Statistics ===========================================
+
+# ======================= Overall average utility gain  ========================
+
+
+
+overall_utility_gain <- 
+  synthetic_data %>% 
+  select(seqn, race, weights = wtmec8yr) %>%
+  mutate(p_cvd = large_model_pred) %>%
+  inner_join(calibrated_race_aware_df %>% rename(race_aware_model_pred = calibrated_pred), by = c("seqn")) %>%
+  inner_join(calibrated_race_blind_df %>% rename(race_blind_model_pred = calibrated_pred), by = c("seqn")) %>%
+  mutate(race_aware_risk_score = race_aware_model_pred,
+         race_blind_risk_score = race_blind_model_pred,
+         race_aware_decision = race_aware_risk_score > screening_thresh,
+         race_blind_decision = race_blind_risk_score > screening_thresh,
+         expected_race_aware_utility = (screening_cost + utility_reward * p_cvd) * race_aware_decision,
+         expected_race_blind_utility = (screening_cost + utility_reward * p_cvd) * race_blind_decision,
+         utility_difference = expected_race_aware_utility - expected_race_blind_utility
+  ) %>%
+  drop_na() %>% # drop observations that have an NA prediction due to missing data
+  summarize(average_utility_diff = sum(utility_difference * weights)/sum(weights)) %>%
+  arrange(desc(average_utility_diff))

@@ -553,7 +553,7 @@ data_no_treatment <- data %>%
   mutate(statins = TRUE,
          hypertension_treatment = TRUE,
          aspirin = TRUE) %>%
-  select(gender, ridageyr, race,
+  select(seqn, gender, ridageyr, race,
          lbxtc, lbdldl, lbdhdd,
          statins, sys_bp, hypertension_treatment,
          diabetes, smokes, aspirin,
