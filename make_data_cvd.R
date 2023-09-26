@@ -524,76 +524,10 @@ data <- raw_demographics_all %>%
          lbxtc, lbdldl, lbdhdd,
          statins, sys_bp, dias_bp, hypertension_treatment,
          diabetes, smokes, aspirin,
-         cvd, wtmec8yr) %>%
+         cvd, wtmec8yr,
+         income, bmxbmi) %>%
   drop_na()
+  filter(race != "Asian") # decided to remove Asian individuals from this
+  # analysis due to scarcity issues with members of this group
 
 saveRDS(data, file = paste(data_object_write_path, "cvd_data.rds", sep = ""))
-
-# ==============================================================================
-# ============================ Synthetic data set ==============================
-
-# Inputs to ASCVD Risk Model: 
-# Gender (gender)
-# Age (ridageyr)
-# Race (race)
-# Total cholesterol (lbxtc)
-# LDL cholesterol (lbdldl)
-# HDL cholesterol (lbdhdd)
-# Treatment with statin (statins)
-# Systolic blood pressure (sys_bp)
-# Treatment for hypertension (hypertension_treatment)
-# History of diabetes (diabetes)
-# Current smoker (smokes)
-# Aspirin therapy (aspirin)
-
-risk_model_formula <- cvd ~ gender + ridageyr + race + lbxtc + lbdldl + 
-  lbdhdd + statins + sys_bp + dias_bp + hypertension_treatment + diabetes + smokes + 
-  aspirin 
-
-risk_model <- glm(risk_model_formula,
-                     data = data,
-                     family = "binomial",
-                     weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
-
-data_no_treatment <- data %>%
-  mutate(statins = FALSE,
-         hypertension_treatment = FALSE,
-         aspirin = FALSE) %>%
-  select(seqn, gender, ridageyr, race,
-         lbxtc, lbdldl, lbdhdd,
-         statins, sys_bp, hypertension_treatment,
-         diabetes, smokes, aspirin,
-         relatives_had_diabetes, relatives_had_heart_attack, felt_depressed,
-         income, health_insurance, food_security,
-         cvd, wtmec8yr)
-
-cvd_risk_no_treatment <- predict(complex_model, newdata = data_no_treatment, type = "response")
-plot(cvd_risk_no_treatment)
-summary(cvd_risk_no_treatment)
-mean(data$cvd)
-mean(predict(complex_model, newdata = data, type = "response"))
-mean(cvd_risk_no_treatment)
-# ======== This is test code -- delete later ========
-# cvd_risk <- predict(complex_model, newdata = data, type = "response")
-# plot(cvd_risk)
-# summary(cvd_risk)
-# 
-# test_model_data <- data %>% filter(!statins, !hypertension_treatment, !aspirin)
-# test_model_formula <- cvd ~ gender + ridageyr + race + lbxtc + lbdldl + 
-#   lbdhdd + sys_bp + diabetes + smokes
-# test_model <- glm(test_model_formula,
-#                  data = test_model_data,
-#                  family = "binomial",
-#                  weights = round(wtmec8yr/1000)) # glm complains when weights aren't ints
-# test_model_pred <- predict(test_model, newdata = test_model_data, type = "response") 
-# plot(test_model_pred)
-# summary(test_model_pred)
-
-set.seed(1)
-synthetic_data <- data_no_treatment %>%
-  mutate(pred_no_treatment = cvd_risk_no_treatment,
-         cvd = runif(n()) <= pred_no_treatment) %>%
-  select(-pred_no_treatment)
-
-saveRDS(synthetic_data, file = paste(data_object_write_path, "synthetic_cvd_data.rds", sep = ""))
-
