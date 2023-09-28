@@ -285,13 +285,13 @@ data <- raw_demographics_all %>%
          diabetes = if_else(diabetes == 1, TRUE, FALSE)
   ) %>%
   # Constructing the CVD label
-  # mutate(congestive_heart_failure = (mcq160b == 1),
-  #        coronary_heart_disease = (mcq160c == 1),
-  #        angina = (mcq160d == 1),
-  #        heart_attack = (mcq160e == 1),
-  #        stroke = (mcq160f == 1),
-  #        cvd = (congestive_heart_failure | coronary_heart_disease | angina | heart_attack | stroke)) %>%
-  # drop_na(cvd) %>%
+  mutate(congestive_heart_failure = (mcq160b == 1),
+         coronary_heart_disease = (mcq160c == 1),
+         angina = (mcq160d == 1),
+         heart_attack = (mcq160e == 1),
+         stroke = (mcq160f == 1),
+         cvd = (congestive_heart_failure | coronary_heart_disease | angina | heart_attack | stroke)) %>%
+  drop_na(cvd) %>%
   # Extracting smoking label (smokes everyday or sometimes)
   mutate(smokes = (smq040 == 1) | (smq040 == 2)) %>%
   # Constructing feature of whether or not respondent is taking statins
@@ -310,7 +310,7 @@ data <- raw_demographics_all %>%
   select(seqn, wtmec8yr, gender, ridageyr, race,
          lbxtc, lbdhdd,
          sys_bp, hypertension_treatment,
-         diabetes, smokes) %>%
+         diabetes, smokes, cvd) %>%
   drop_na()
 
 saveRDS(data, file = paste(data_object_write_path, "cvd_data.rds", sep = ""))
