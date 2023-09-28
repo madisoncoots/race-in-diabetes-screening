@@ -20,21 +20,6 @@
 # Taken from the supplement of:
 # A Report of the American College of Cardiology/American Heart Association 
 # Task Force on Practice Guidelines. Goff et al. 2014
-#
-# The 2013 Pooled Cohort Equations for ASCVD risk use the following features:
-#   ln(Age)
-#   ln(Age^2)
-#   ln(Total cholesterol)
-#   ln(Age) * ln(Total cholesterol)
-#   ln(HDL-C)
-#   ln(Age) * ln(HDL-C)
-#   log(Treated sys. BP)
-#   log(Age) * log(Treated sys. BP)
-#   log(Untreated sys. BP)
-#   log(Age) * log(Untreated sys. BP)
-#   Current Smoker
-#   log(Age) * Current Smoker
-#   Diabetes
 
 # The full data object is written to the path specified in data_object_write_path
 
