@@ -284,7 +284,7 @@ data <- raw_demographics_all %>%
          diabetes = as.integer(diabetes),
          diabetes = if_else(diabetes == 1, TRUE, FALSE)
   ) %>%
-  # Constructing the CVD label
+  # Constructing a CVD label
   mutate(congestive_heart_failure = (mcq160b == 1),
          coronary_heart_disease = (mcq160c == 1),
          angina = (mcq160d == 1),

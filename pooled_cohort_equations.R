@@ -95,38 +95,38 @@ predict_10_yr_cvd_risk(coef = black_men_coef,
 
 
 # ======================================================================
-# Making and saving predictions
+# Making race-aware ASCVD predictions (standard)
 # ======================================================================
 
 white_women_data <- model_data %>%
   filter(race == "White", gender == "Woman") %>%
-  mutate(ascvd_risk = predict_10_yr_cvd_risk(coef = white_women_coef,
-                                             data = .,
-                                             mean_val = white_women_mean_val,
-                                             baseline_survival = white_women_baseline_survival))
+  mutate(race_aware_ascvd_risk = predict_10_yr_cvd_risk(coef = white_women_coef,
+                                                        data = .,
+                                                        mean_val = white_women_mean_val,
+                                                        baseline_survival = white_women_baseline_survival))
 
 black_women_data <- model_data %>%
   filter(race == "Black", gender == "Woman")  %>%
-  mutate(ascvd_risk = predict_10_yr_cvd_risk(coef = black_women_coef,
-                                             data = .,
-                                             mean_val = black_women_mean_val,
-                                             baseline_survival = black_women_baseline_survival))
+  mutate(race_aware_ascvd_risk = predict_10_yr_cvd_risk(coef = black_women_coef,
+                                                        data = .,
+                                                        mean_val = black_women_mean_val,
+                                                        baseline_survival = black_women_baseline_survival))
 
 white_men_data <- model_data %>%
   filter(race == "White", gender == "Man")  %>%
-  mutate(ascvd_risk = predict_10_yr_cvd_risk(coef = white_men_coef,
-                                             data = .,
-                                             mean_val = white_men_mean_val,
-                                             baseline_survival = white_men_baseline_survival))
+  mutate(race_aware_ascvd_risk = predict_10_yr_cvd_risk(coef = white_men_coef,
+                                                        data = .,
+                                                        mean_val = white_men_mean_val,
+                                                        baseline_survival = white_men_baseline_survival))
 
 black_men_data <- model_data %>%
   filter(race == "Black", gender == "Man")  %>%
-  mutate(ascvd_risk = predict_10_yr_cvd_risk(coef = black_men_coef,
-                                             data = .,
-                                             mean_val = black_men_mean_val,
-                                             baseline_survival = black_men_baseline_survival))
+  mutate(race_aware_ascvd_risk = predict_10_yr_cvd_risk(coef = black_men_coef,
+                                                        data = .,
+                                                        mean_val = black_men_mean_val,
+                                                        baseline_survival = black_men_baseline_survival))
 
-all_data_with_ascvd <- bind_rows(
+all_data_with_race_aware_ascvd <- bind_rows(
   white_women_data,
   black_women_data,
   white_men_data,
@@ -134,3 +134,51 @@ all_data_with_ascvd <- bind_rows(
 )
 
 saveRDS(all_data_with_ascvd, file = paste(data_object_write_path, "all_data_with_ascvd.rds", sep = ""))
+
+# ======================================================================
+# Making race-blind ASCVD predictions (non-standard)
+# ======================================================================
+
+women_data <- model_data %>%
+  filter(gender == "Woman") %>%
+  mutate(white_ascvd_risk = predict_10_yr_cvd_risk(coef = white_women_coef,
+                                                   data = .,
+                                                   mean_val = white_women_mean_val,
+                                                   baseline_survival = white_women_baseline_survival),
+         black_ascvd_risk = predict_10_yr_cvd_risk(coef = black_women_coef,
+                                                   data = .,
+                                                   mean_val = black_women_mean_val,
+                                                   baseline_survival = black_women_baseline_survival),
+         race_blind_ascvd_risk = (0.5 * white_ascvd_risk + 0.5 * black_ascvd_risk)) %>%
+  select(-white_ascvd_risk, black_ascvd_risk)
+
+men_data <- model_data %>%
+  filter(gender == "Man") %>%
+  mutate(white_ascvd_risk = predict_10_yr_cvd_risk(coef = white_men_coef,
+                                                   data = .,
+                                                   mean_val = white_men_mean_val,
+                                                   baseline_survival = white_men_baseline_survival),
+         black_ascvd_risk = predict_10_yr_cvd_risk(coef = black_men_coef,
+                                                   data = .,
+                                                   mean_val = black_men_mean_val,
+                                                   baseline_survival = black_men_baseline_survival),
+         race_blind_ascvd_risk = (0.5 * white_ascvd_risk + 0.5 * black_ascvd_risk)) %>%
+  select(-white_ascvd_risk, black_ascvd_risk)
+
+all_data_with_race_blind_ascvd <- bind_rows(
+  women_data,
+  men_data
+)  
+
+# ======================================================================
+# Saving data and both predictions
+# ======================================================================
+
+all_data_with_both_ascvd <-
+  all_data_with_race_aware_ascvd %>%
+  left_join(all_data_with_race_blind_ascvd %>%
+              select(seqn, race_blind_ascvd_risk),
+            by = c("seqn"))
+  
+saveRDS(all_data_with_both_ascvd, file = paste(data_object_write_path, "all_data_with_ascvd.rds", sep = ""))  
+  
