@@ -16,7 +16,7 @@ source(here::here(directory_path, 'ascvd_constants.R'))
 data <- readRDS(here::here(directory_path, 'data/processed', 'cvd_data.rds'))
 
 # ======================================================================
-# Function that constructs the features used to compute 1--yr ASCVD risk
+# Function that constructs the features used to compute 10-yr ASCVD risk
 # ======================================================================
 make_model_data <- function(data) {
   model_data <- data %>%

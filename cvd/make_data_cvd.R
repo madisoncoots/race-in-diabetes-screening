@@ -254,7 +254,8 @@ data <- raw_demographics_all %>%
   inner_join(raw_tchol_all, by = c("seqn")) %>%
   inner_join(raw_hdl_all, by = c("seqn")) %>%
   inner_join(raw_bpx_all, by = c("seqn")) %>%
-  filter(ridageyr >= 18) %>%
+  filter(ridageyr >= 40) %>%
+  filter(ridageyr <= 79) %>%
   filter(ridexprg != 1 | is.na(ridexprg)) %>%
   # Making the race variable more readable
   mutate(
