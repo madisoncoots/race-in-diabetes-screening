@@ -1,68 +1,44 @@
 # =======================================
-# Coef. x Value Group Means (by Race/Sex) 
-# =======================================
-
-white_women_mean_val <- -29.18
-black_women_mean_val <- 86.61
-white_men_mean_val <- 61.18
-black_men_mean_val <- 19.54
-
-
-# =======================================
-# Baseline Survival Rates (by Race/Sex) 
-# =======================================
-
-white_women_baseline_survival <- 0.9665
-black_women_baseline_survival <- 0.9533
-white_men_baseline_survival <- 0.9144
-black_men_baseline_survival <- 0.8954
-
-# =======================================
 # ASCVD Risk Model Coefficients 
 # =======================================
 
-white_women_coef <- c(ln_age = -29.799, 
-                      ln_age_sq = 4.884, 
-                      ln_tchol = 13.540,
-                      ln_age_ln_tchol = -3.114,
-                      ln_hdl = -13.578,
-                      ln_age_ln_hdl = 3.149,
-                      ln_treated_sys_bp = 2.019,
-                      ln_untreated_sys_bp = 1.957,
-                      smokes = 7.574,
-                      ln_age_smokes = -1.665,
-                      diabetes = 0.661
+women_coef <- c(intercept = -12.823110,
+                ridageyr = 0.106501, 
+                is_black = 0.432440,
+                sq_sys_bp = 0.000056,
+                sys_bp = 0.017666,
+                hypertension_treatment = 0.731678,
+                diabetes = 0.943970,
+                smokes = 1.009790,
+                tc_hdl_ratio = 0.151318,
+                age_if_black = -0.008580,
+                sys_bp_if_ht_treat = -0.003647,
+                sys_bp_if_black = 0.006208,
+                black_and_ht_treatment = 0.152968,
+                age_times_sys_bp = -0.000153,
+                black_and_diabetes = 0.115232,
+                black_and_smokes = -0.092231,
+                tc_hdl_ratio_if_black = 0.070498,
+                sys_bp_if_black_and_hp_treatment = -0.000173,
+                age_times_sys_bp_if_black = -0.000094
 )
 
-black_women_coef <- c(ln_age = 17.114, 
-                      ln_tchol = 0.940,
-                      ln_hdl = -18.920,
-                      ln_age_ln_hdl = 4.475,
-                      ln_treated_sys_bp = 29.291,
-                      ln_age_ln_treated_sys_bp = -6.432,
-                      ln_untreated_sys_bp = 27.820,
-                      ln_age_ln_untreated_sys_bp = -6.087,
-                      smokes = 0.691,
-                      diabetes = 0.874
-)
-
-white_men_coef <- c(ln_age = 12.344, 
-                      ln_tchol = 11.853,
-                      ln_age_ln_tchol = -2.664,
-                      ln_hdl = -7.990,
-                      ln_age_ln_hdl = 1.769,
-                      ln_treated_sys_bp = 1.797,
-                      ln_untreated_sys_bp = 1.764,
-                      smokes = 7.837,
-                      ln_age_smokes = -1.795,
-                      diabetes = 0.658
-)
-
-black_men_coef <- c(ln_age = 2.469, 
-                    ln_tchol = 0.302,
-                    ln_hdl = -0.307,
-                    ln_treated_sys_bp = 1.916,
-                    ln_untreated_sys_bp = 1.809,
-                    smokes = 0.549,
-                    diabetes = 0.645
+men_coef <- c(intercept = -11.679980,
+              ridageyr = 0.064200, 
+              is_black = 0.482835,
+              sq_sys_bp = -0.000061,
+              sys_bp = 0.038950,
+              hypertension_treatment = 2.055533,
+              diabetes = 0.842209,
+              smokes = 0.895589,
+              tc_hdl_ratio = 0.193307,
+              sys_bp_if_ht_treat = -0.014207,
+              sys_bp_if_black = 0.011609,
+              black_and_ht_treatment = -0.119460,
+              age_times_sys_bp = 0.000025,
+              black_and_diabetes = -0.077214,
+              black_and_smokes = -0.226771,
+              tc_hdl_ratio_if_black = -0.117749,
+              sys_bp_if_black_and_hp_treatment = 0.004190 ,
+              age_times_sys_bp_if_black = -0.000199
 )

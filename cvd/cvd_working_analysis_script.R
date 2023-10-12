@@ -14,7 +14,7 @@ save_path <- here::here(directory_path, 'figures/')
 
 source(here::here(directory_path, 'colors.R'))
 
-data <- readRDS(here::here(directory_path, 'data/processed', 'all_data_with_ascvd.rds'))
+data <- readRDS(here::here(directory_path, 'data/processed', 'all_data_with_ascvd_2018_PCE.rds'))
 
 theme_set(theme_bw(base_size = 15))
 
@@ -22,8 +22,8 @@ theme_set(theme_bw(base_size = 15))
 # ===========================================================================================
 # ======================================= Figures ===========================================
 
-risk_score_upper_bound <- 0.4
-incidence_upper_bound <- 0.45
+risk_score_upper_bound <- 0.24
+incidence_upper_bound <- 0.32
 # ===========================================================================================
 # ============================== Race-aware calibration plot ================================
 # ===========================================================================================
@@ -37,7 +37,7 @@ data %>%
             bin_avg = sum(race_aware_ascvd_risk * wtmec8yr) / sum(wtmec8yr),
             cvd_prev = sum(race_aware_ascvd_risk * wtmec8yr) / sum(wtmec8yr)) %>%
   ggplot(aes(x=bin_avg, y=cvd_prev, color=race)) +
-  geom_vline(xintercept=0.2) +
+  geom_vline(xintercept=0.075) +
   geom_line() + 
   geom_point() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
@@ -66,7 +66,7 @@ data %>%
             bin_avg = sum(race_blind_ascvd_risk * wtmec8yr) / sum(wtmec8yr),
             cvd_prev = sum(race_aware_ascvd_risk * wtmec8yr) / sum(wtmec8yr)) %>%
   ggplot(aes(x=bin_avg, y=cvd_prev, color=race)) +
-  geom_vline(xintercept=0.2) +
+  geom_vline(xintercept=0.075) +
   geom_line() + 
   geom_point() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +

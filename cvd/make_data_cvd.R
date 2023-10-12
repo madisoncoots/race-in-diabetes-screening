@@ -246,14 +246,14 @@ write_csv(raw_bpx_all, file = paste(table_write_path, "raw_bpx_all.csv", sep = "
 
 
 data <- raw_demographics_all %>%
-  inner_join(raw_survey_responses_all, by = c("seqn")) %>%
-  inner_join(raw_bp_and_chol_all, by = c("seqn")) %>%
-  inner_join(raw_glycohemoglobin_all, by = c("seqn")) %>%
-  inner_join(raw_medical_cond_all, by = c("seqn")) %>%
-  inner_join(raw_smoking_all, by = c("seqn")) %>%
-  inner_join(raw_tchol_all, by = c("seqn")) %>%
-  inner_join(raw_hdl_all, by = c("seqn")) %>%
-  inner_join(raw_bpx_all, by = c("seqn")) %>%
+  left_join(raw_survey_responses_all, by = c("seqn")) %>%
+  left_join(raw_bp_and_chol_all, by = c("seqn")) %>%
+  left_join(raw_glycohemoglobin_all, by = c("seqn")) %>%
+  left_join(raw_medical_cond_all, by = c("seqn")) %>%
+  left_join(raw_smoking_all, by = c("seqn")) %>%
+  left_join(raw_tchol_all, by = c("seqn")) %>%
+  left_join(raw_hdl_all, by = c("seqn")) %>%
+  left_join(raw_bpx_all, by = c("seqn")) %>%
   filter(ridageyr >= 40) %>%
   filter(ridageyr <= 79) %>%
   filter(ridexprg != 1 | is.na(ridexprg)) %>%
@@ -298,7 +298,7 @@ data <- raw_demographics_all %>%
   # Constructing feature of whether or not respondent is taking statins
   # A response of NA mans that a respondent was never recommended
   # statins, therefore they are not taking them
-  # mutate(statins = (bpq100d == 1) & (!is.na(bpq100d))) %>%
+  mutate(statins = (bpq100d == 1) & (!is.na(bpq100d))) %>%
   # Constructing feature of whether or not respondent is taking hypertension meds
   # A response of NA mans that a respondent was never recommended
   # medication, therefore they are not taking any
@@ -311,7 +311,14 @@ data <- raw_demographics_all %>%
   select(seqn, wtmec8yr, gender, ridageyr, race,
          lbxtc, lbdhdd,
          sys_bp, hypertension_treatment,
-         diabetes, smokes, cvd) %>%
-  drop_na()
+         diabetes, smokes, cvd, statins) %>%
+  drop_na(seqn, wtmec8yr, gender, ridageyr, race,
+          lbxtc, lbdhdd,
+          sys_bp, hypertension_treatment,
+          diabetes, smokes) %>%
+  filter(!cvd, !statins) %>%
+  filter(lbdhdd >= 20, lbdhdd <= 100) %>%
+  filter(lbxtc >= 130, lbxtc <= 320) %>%
+  filter(sys_bp >= 90, sys_bp <= 200) # These conditons from 2018 paper
 
 saveRDS(data, file = paste(data_object_write_path, "cvd_data.rds", sep = ""))
