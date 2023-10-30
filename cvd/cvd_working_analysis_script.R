@@ -14,7 +14,10 @@ save_path <- here::here(directory_path, 'figures/')
 
 source(here::here(directory_path, 'colors.R'))
 
-data <- readRDS(here::here(directory_path, 'data/processed', 'all_data_with_ascvd_2018_PCE.rds'))
+data <- readRDS(here::here(directory_path, 'data/processed', 'all_data_with_ascvd_2013_PCE.rds')) %>%
+  mutate(race = case_when(race == "black" ~ "Black",
+                          race == "white" ~ "White",
+                          TRUE ~ race))
 
 theme_set(theme_bw(base_size = 15))
 
@@ -82,6 +85,76 @@ data %>%
   scale_color_manual(values=group_color_map,
                      breaks =group_names)
 
+# ===========================================================================================
+# ========================== Race-gender-blind calibration plot =============================
+# ===========================================================================================
+
+data %>%
+  select(race, gender, race_gender_blind_ascvd_risk, race_aware_ascvd_risk, wtmec8yr) %>%
+  mutate(bin = round(race_gender_blind_ascvd_risk / 0.025) * 0.025,
+         bucket = ntile(race_gender_blind_ascvd_risk / 0.025, 10)) %>%
+  group_by(race, gender, bin) %>%
+  summarize(n_in_bin = sum(wtmec8yr),
+            bin_avg = sum(race_gender_blind_ascvd_risk * wtmec8yr) / sum(wtmec8yr),
+            cvd_prev = sum(race_aware_ascvd_risk * wtmec8yr) / sum(wtmec8yr)) %>%
+  ggplot(aes(x=bin_avg, y=cvd_prev, color=race, linetype=gender)) +
+  geom_vline(xintercept=0.075) +
+  geom_line() + 
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
+  xlab("Race-gender-blind ASCVD risk") +
+  ylab("True CVD Risk") +
+  scale_y_continuous(labels = scales::percent,
+                     breaks = seq(0.0, incidence_upper_bound, 0.04)) +
+  scale_x_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.04)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
+  theme(legend.title = element_blank(),
+        legend.position = c(0.15, 0.7)) +
+  scale_color_manual(values=group_color_map,
+                     breaks =group_names)
+
+# ===========================================================================================
+# ====================================== Scatter plot =======================================
+# ===========================================================================================
+
+data %>%
+  select(race, race_blind_ascvd_risk, race_aware_ascvd_risk, wtmec8yr) %>%
+  ggplot(aes(x=race_blind_ascvd_risk, y=race_aware_ascvd_risk, color=race)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
+  geom_point(shape = 1) +
+  xlab("Race-blind ASCVD risk") +
+  ylab("Race-aware ASCVD risk") +
+  scale_color_manual(values=group_color_map,
+                     breaks =group_names) + 
+  theme(legend.title = element_blank(),
+        legend.position = c(0.15, 0.86)) +
+  coord_cartesian(xlim = c(0, 0.4), ylim = c(0, 0.4)) +
+  scale_x_continuous(labels = scales::percent,
+                     breaks = seq(0.0, 0.4, 0.05)) +
+  scale_y_continuous(labels = scales::percent,
+                     breaks = seq(0.0, 0.4, 0.05))
+
+# ===========================================================================================
+# ===================================== Histogram plot ======================================
+# ===========================================================================================
+
+data %>%
+  select(race, race_blind_ascvd_risk, race_aware_ascvd_risk, wtmec8yr) %>%
+  mutate(score_diff = race_aware_ascvd_risk - race_blind_ascvd_risk) %>%
+  ggplot(aes(x = score_diff, weight = wtmec8yr, fill = race)) +
+  facet_wrap(vars(fct_rev(race)), ncol = 2) +
+  geom_histogram(binwidth = 0.01, aes(y = after_stat(count/tapply(count, PANEL, sum)[PANEL]))) +
+  scale_fill_manual(values=group_color_map,
+                     breaks =group_names) +
+  scale_y_continuous(labels = scales::percent,
+                     breaks = seq(0.0, 0.9, 0.1)) +
+  scale_x_continuous(labels = scales::percent) +
+  coord_cartesian(xlim = c(-0.2, 0.2), ylim = c(0, 0.9)) +
+  xlab("Race-aware risk - race-blind risk") +
+  ylab("Population proportion (%)") + 
+  theme(legend.title = element_blank(),
+        legend.position = c(0.85, 0.86))
 
 
 # ===========================================================================================
@@ -158,18 +231,18 @@ ordered_group_names <- group_names[line_order]
 
 x_axis_label <- expression(paste(italic("r")))
 
-sensitivity_analysis_points %>%
-  ggplot(aes(x = utility_val, y = population_benefit, color = race)) +
-  geom_vline(xintercept = fixed_point$utility_val) +
-  geom_line() +
-  geom_point(data = fixed_point, aes(x = utility_val, y = population_benefit, color = race)) +
-  geom_hline(data = fixed_point, aes(yintercept = population_benefit, color = race), linetype = "dashed") +
-  labs(x = x_axis_label,
-       y = "Benefit from race-aware model") +
-  scale_color_manual(values=ordered_group_color_map,
-                     breaks = ordered_group_names) +
-  theme(legend.title = element_blank(),
-        legend.position = c(0.8, 0.84))
+# sensitivity_analysis_points %>%
+#   ggplot(aes(x = utility_val, y = population_benefit, color = race)) +
+#   geom_vline(xintercept = fixed_point$utility_val) +
+#   geom_line() +
+#   geom_point(data = fixed_point, aes(x = utility_val, y = population_benefit, color = race)) +
+#   geom_hline(data = fixed_point, aes(yintercept = population_benefit, color = race), linetype = "dashed") +
+#   labs(x = x_axis_label,
+#        y = "Benefit from race-aware model") +
+#   scale_color_manual(values=ordered_group_color_map,
+#                      breaks = ordered_group_names) +
+#   theme(legend.title = element_blank(),
+#         legend.position = c(0.8, 0.84))
 
 
 # ===========================================================================================

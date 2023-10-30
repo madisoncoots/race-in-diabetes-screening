@@ -118,9 +118,9 @@ race_breakdown <- model_data %>%
 prop_black <- race_breakdown %>% filter(race == "Black") %>% pull(prop)
 prop_white <- race_breakdown %>% filter(race == "White") %>% pull(prop)
 
-# Approximated from breakdown of study cohort used for training the revised PCEs
-prop_black <- 0.3
-prop_white <- 0.7
+# # Approximated from breakdown of study cohort used for training the revised PCEs
+# prop_black <- 0.3
+# prop_white <- 0.7
 
 women_data <- model_data %>%
   filter(gender == "Woman") %>%
