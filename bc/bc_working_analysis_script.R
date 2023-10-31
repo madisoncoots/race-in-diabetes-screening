@@ -83,6 +83,29 @@ data %>%
         legend.position = c(0.18, 0.81)) + 
   scale_color_manual(values=group_color_map,
                      breaks =group_names)
+
+# ===========================================================================================
+# ====================================== Scatter plot =======================================
+# ===========================================================================================
+
+data %>%
+  select(race, race_blind_risk, race_aware_risk, wtmec8yr) %>%
+  ggplot(aes(x=race_blind_risk, y=race_aware_risk, color=race)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
+  geom_point(shape = 1) +
+  geom_vline(xintercept=screening_thresh) +
+  geom_hline(yintercept=screening_thresh) +
+  xlab("Race-blind ASCVD risk") +
+  ylab("Race-aware ASCVD risk") +
+  scale_color_manual(values=group_color_map,
+                     breaks =group_names) + 
+  theme(legend.title = element_blank(),
+        legend.position = c(0.15, 0.86)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, risk_score_upper_bound)) +
+  scale_x_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.005)) +
+  scale_y_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.005))
   
 # ===========================================================================================
 # ============================== Race-blind risk distribution ===============================
