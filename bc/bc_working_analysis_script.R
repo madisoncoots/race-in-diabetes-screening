@@ -95,8 +95,8 @@ data %>%
   geom_point(shape = 1) +
   geom_vline(xintercept=screening_thresh) +
   geom_hline(yintercept=screening_thresh) +
-  xlab("Race-blind ASCVD risk") +
-  ylab("Race-aware ASCVD risk") +
+  xlab("Race-blind BC risk") +
+  ylab("True BC risk") +
   scale_color_manual(values=group_color_map,
                      breaks =group_names) + 
   theme(legend.title = element_blank(),
