@@ -93,6 +93,10 @@ data %>%
   ggplot(aes(x=race_blind_risk, y=race_aware_risk, color=race)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
   geom_point(shape = 1) +
+  annotate("rect", xmin = -1, xmax = screening_thresh, ymin = -1, ymax = screening_thresh,
+           alpha = 0.6, fill="white") +
+  annotate("rect", xmin = screening_thresh, xmax = 1, ymin = screening_thresh, ymax = 1,
+           alpha = 0.6, fill="white") +
   geom_vline(xintercept=screening_thresh) +
   geom_hline(yintercept=screening_thresh) +
   xlab("Race-blind BC risk") +
