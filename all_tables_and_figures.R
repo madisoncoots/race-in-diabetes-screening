@@ -17,6 +17,8 @@ data <- readRDS(here::here(directory_path, 'data/processed', 'data.rds'))
 
 theme_set(theme_bw(base_size = 15))
 
+screening_thresh <- 0.015
+
 # ===========================================================================================
 # ====================================== Models =============================================
 
@@ -167,8 +169,10 @@ ggsave(paste(save_path, "race_aware_calibration_plot.pdf", sep = ""),
 # ====================================== Scatter plot =======================================
 # ===========================================================================================
 
-race_blind_calibration_plot_data %>%
-  ggplot(aes(x=bin_avg_risk_score, y=diabetes_prev, color=race)) +
+data %>%
+  mutate(race_blind_risk = race_blind_model_pred,
+         race_aware_risk = race_aware_model_pred) %>%
+  ggplot(aes(x=race_blind_risk, y=race_aware_risk, color=race)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
   geom_point(shape = 1) +
   annotate("rect", xmin = -1, xmax = screening_thresh, ymin = -1, ymax = screening_thresh,
@@ -177,17 +181,17 @@ race_blind_calibration_plot_data %>%
            alpha = 0.6, fill="white") +
   geom_vline(xintercept=screening_thresh) +
   geom_hline(yintercept=screening_thresh) +
-  xlab("Race-blind LC risk") +
-  ylab("True LC risk") +
+  xlab("Race-blind diabetes risk") +
+  ylab("Race-aware diabetes risk") +
   scale_color_manual(values=group_color_map,
                      breaks =group_names) + 
   theme(legend.title = element_blank(),
-        legend.position = c(0.15, 0.86)) +
-  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, risk_score_upper_bound)) +
-  scale_x_continuous(labels = scales::percent,
-                     breaks = seq(0.0, risk_score_upper_bound, 0.01)) +
+        legend.position = c(0.35, 0.84)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
   scale_y_continuous(labels = scales::percent,
-                     breaks = seq(0.0, risk_score_upper_bound, 0.01))
+                     breaks = seq(0.0, incidence_upper_bound, 0.04)) +
+  scale_x_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.02))
 
 # ========================= Figure 2: Subgroup analysis plot ========================
 
