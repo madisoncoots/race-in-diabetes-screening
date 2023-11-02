@@ -136,11 +136,11 @@ data %>%
                      breaks =group_names) + 
   theme(legend.title = element_blank(),
         legend.position = c(0.11, 0.9)) +
-  coord_cartesian(xlim = c(0, 0.4), ylim = c(0, 0.4)) +
-  scale_x_continuous(labels = scales::percent,
-                     breaks = seq(0.0, 0.4, 0.05)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, incidence_upper_bound)) +
   scale_y_continuous(labels = scales::percent,
-                     breaks = seq(0.0, 0.4, 0.05))
+                     breaks = seq(0.0, incidence_upper_bound, 0.04)) +
+  scale_x_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.04))
 
 # ===========================================================================================
 # ===================================== Histogram plot ======================================
