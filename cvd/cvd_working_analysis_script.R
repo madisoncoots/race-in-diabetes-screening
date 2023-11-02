@@ -27,6 +27,7 @@ theme_set(theme_bw(base_size = 15))
 
 risk_score_upper_bound <- 0.24
 incidence_upper_bound <- 0.32
+screening_thresh <- 0.075
 # ===========================================================================================
 # ============================== Race-aware calibration plot ================================
 # ===========================================================================================
@@ -40,7 +41,7 @@ data %>%
             bin_avg = sum(race_aware_ascvd_risk * wtmec8yr) / sum(wtmec8yr),
             cvd_prev = sum(race_aware_ascvd_risk * wtmec8yr) / sum(wtmec8yr)) %>%
   ggplot(aes(x=bin_avg, y=cvd_prev, color=race)) +
-  geom_vline(xintercept=0.075) +
+  geom_vline(xintercept=screening_thresh) +
   geom_line() + 
   geom_point() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
@@ -69,7 +70,7 @@ data %>%
             bin_avg = sum(race_blind_ascvd_risk * wtmec8yr) / sum(wtmec8yr),
             cvd_prev = sum(race_aware_ascvd_risk * wtmec8yr) / sum(wtmec8yr)) %>%
   ggplot(aes(x=bin_avg, y=cvd_prev, color=race)) +
-  geom_vline(xintercept=0.075) +
+  geom_vline(xintercept=screening_thresh) +
   geom_line() + 
   geom_point() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
@@ -98,7 +99,7 @@ data %>%
             bin_avg = sum(race_gender_blind_ascvd_risk * wtmec8yr) / sum(wtmec8yr),
             cvd_prev = sum(race_aware_ascvd_risk * wtmec8yr) / sum(wtmec8yr)) %>%
   ggplot(aes(x=bin_avg, y=cvd_prev, color=race, linetype=gender)) +
-  geom_vline(xintercept=0.075) +
+  geom_vline(xintercept=screening_thresh) +
   geom_line() + 
   geom_point() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
@@ -123,12 +124,18 @@ data %>%
   ggplot(aes(x=race_blind_ascvd_risk, y=race_aware_ascvd_risk, color=race)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
   geom_point(shape = 1) +
+  annotate("rect", xmin = -1, xmax = screening_thresh, ymin = -1, ymax = screening_thresh,
+           alpha = 0.6, fill="white") +
+  annotate("rect", xmin = screening_thresh, xmax = 1, ymin = screening_thresh, ymax = 1,
+           alpha = 0.6, fill="white") +
+  geom_vline(xintercept=screening_thresh) +
+  geom_hline(yintercept=screening_thresh) +
   xlab("Race-blind ASCVD risk") +
   ylab("Race-aware ASCVD risk") +
   scale_color_manual(values=group_color_map,
                      breaks =group_names) + 
   theme(legend.title = element_blank(),
-        legend.position = c(0.15, 0.86)) +
+        legend.position = c(0.11, 0.9)) +
   coord_cartesian(xlim = c(0, 0.4), ylim = c(0, 0.4)) +
   scale_x_continuous(labels = scales::percent,
                      breaks = seq(0.0, 0.4, 0.05)) +
