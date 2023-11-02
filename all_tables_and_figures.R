@@ -163,6 +163,32 @@ ggsave(paste(save_path, "race_aware_calibration_plot.pdf", sep = ""),
        width = 5.25,
        height = 5)
 
+# ===========================================================================================
+# ====================================== Scatter plot =======================================
+# ===========================================================================================
+
+race_blind_calibration_plot_data %>%
+  ggplot(aes(x=bin_avg_risk_score, y=diabetes_prev, color=race)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "darkgray") +
+  geom_point(shape = 1) +
+  annotate("rect", xmin = -1, xmax = screening_thresh, ymin = -1, ymax = screening_thresh,
+           alpha = 0.6, fill="white") +
+  annotate("rect", xmin = screening_thresh, xmax = 1, ymin = screening_thresh, ymax = 1,
+           alpha = 0.6, fill="white") +
+  geom_vline(xintercept=screening_thresh) +
+  geom_hline(yintercept=screening_thresh) +
+  xlab("Race-blind LC risk") +
+  ylab("True LC risk") +
+  scale_color_manual(values=group_color_map,
+                     breaks =group_names) + 
+  theme(legend.title = element_blank(),
+        legend.position = c(0.15, 0.86)) +
+  coord_cartesian(xlim = c(0, risk_score_upper_bound), ylim = c(0, risk_score_upper_bound)) +
+  scale_x_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.01)) +
+  scale_y_continuous(labels = scales::percent,
+                     breaks = seq(0.0, risk_score_upper_bound, 0.01))
+
 # ========================= Figure 2: Subgroup analysis plot ========================
 
 utility_reward <- 70
